@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "yngvark",
+  "description": "Yngvar's Claude Code plugins",
+  "owner": {
+    "name": "Yngvar Kristiansen"
+  },
+  "metadata": {
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "one-shot",
+      "source": "./plugins/one-shot",
+      "description": "Activate one-shot mode: a decider subagent answers clarifying questions on your behalf so you are not interrupted during design or implementation.",
+      "author": {
+        "name": "Yngvar Kristiansen"
+      }
+    }
+  ]
+}

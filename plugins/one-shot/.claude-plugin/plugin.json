@@ -1,0 +1,10 @@
+{
+  "name": "one-shot",
+  "version": "0.1.0",
+  "description": "Activate one-shot mode: a decider subagent answers clarifying questions on your behalf so you are not interrupted during design or implementation.",
+  "author": {
+    "name": "Yngvar Kristiansen"
+  },
+  "keywords": ["workflow", "subagent", "automation", "one-shot"],
+  "license": "MIT"
+}
