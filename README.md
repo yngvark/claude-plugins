@@ -23,6 +23,18 @@ After installing, activate by saying "activate one-shot mode" (or similar) in an
 
 Design notes: [`docs/one-shot.md`](docs/one-shot.md).
 
+### gh-read
+
+Read-only proxy for `gh api`. Forces `--method GET` and enforces a path/flag allowlist so Claude Code cannot accidentally mutate GitHub state when fetching issues, PRs, workflow runs, or other read-only data.
+
+After installing, the `gh-read` skill activates whenever Claude needs to query the GitHub API.
+
+```
+/plugin install gh-read@yngvark
+```
+
+Design notes: [`docs/gh-read.md`](docs/gh-read.md).
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
