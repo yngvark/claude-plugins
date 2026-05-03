@@ -1,0 +1,10 @@
+{
+  "name": "gh-read",
+  "version": "0.1.0",
+  "description": "Read-only GitHub API proxy. Forces GET and an endpoint allowlist so Claude Code cannot mutate GitHub state.",
+  "author": {
+    "name": "Yngvar Kristiansen"
+  },
+  "keywords": ["github", "api", "read-only", "security"],
+  "license": "MIT"
+}
