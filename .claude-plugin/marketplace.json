@@ -16,6 +16,14 @@
       "author": {
         "name": "Yngvar Kristiansen"
       }
+    },
+    {
+      "name": "gh-read",
+      "source": "./plugins/gh-read",
+      "description": "Read-only GitHub API proxy. Forces GET and an endpoint allowlist so Claude Code cannot mutate GitHub state.",
+      "author": {
+        "name": "Yngvar Kristiansen"
+      }
     }
   ]
 }
