@@ -66,3 +66,24 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'search/repositories?q=language:
 
 - Any write flags: `-X`, `--method`, `-f`, `--field`, `--raw-field`, `-F`, `--input`
 - Any API path not in the allowlist above (e.g., `/user`, `/repos/o/r/actions/secrets`)
+
+## Missing functionality
+
+If a legitimate read-only GitHub API call is blocked by this skill (path not on the allowlist, flag not supported, etc.), do NOT work around it with `gh api` or other tools. Instead:
+
+1. Show the user a prominent banner notice, e.g.:
+
+   ```
+   ╔══════════════════════════════════════════════════════════════════╗
+   ║  ⚠️  gh-read SKILL IS MISSING SUPPORT                            ║
+   ║                                                                  ║
+   ║  Needed: <describe what is missing>                              ║
+   ║  Reason: <why the current allowlist/flags are insufficient>      ║
+   ║                                                                  ║
+   ║  The gh-read skill should be updated to support this.            ║
+   ╚══════════════════════════════════════════════════════════════════╝
+   ```
+
+2. Offer to create a GitHub issue at https://github.com/yngvark/claude-plugins describing the gap.
+
+3. **NEVER create the issue without explicit user consent.** Wait for the user to confirm before filing anything.
