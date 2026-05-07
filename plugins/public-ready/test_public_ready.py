@@ -141,5 +141,55 @@ class TestParseFindings:
         assert scan.parse_findings("null") == []
 
 
+# ---------------------------------------------------------------------------
+# format_report_section
+# ---------------------------------------------------------------------------
+
+
+class TestFormatReportSection:
+    def test_empty_findings(self) -> None:
+        out = scan.format_report_section([])
+        assert "no secrets detected" in out.lower()
+
+    def test_one_finding(self) -> None:
+        out = scan.format_report_section(
+            [
+                {
+                    "file": "src/config.py",
+                    "line": 12,
+                    "rule": "aws-access-key",
+                    "description": "AWS Access Key",
+                    "snippet": "AKIAIOSFODNN7EXAMPLE",
+                }
+            ]
+        )
+        assert "src/config.py:12" in out
+        assert "aws-access-key" in out
+        assert "AKIAIOSFODNN7EXAMPLE" in out
+
+    def test_multiple_findings_each_appears(self) -> None:
+        findings = [
+            {
+                "file": "a.py",
+                "line": 1,
+                "rule": "r1",
+                "description": "d1",
+                "snippet": "s1",
+            },
+            {
+                "file": "b.py",
+                "line": 2,
+                "rule": "r2",
+                "description": "d2",
+                "snippet": "s2",
+            },
+        ]
+        out = scan.format_report_section(findings)
+        assert "a.py:1" in out
+        assert "b.py:2" in out
+        assert "r1" in out
+        assert "r2" in out
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v", *sys.argv[1:]]))
