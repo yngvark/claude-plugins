@@ -4,6 +4,7 @@
 # requires-python = ">=3.10"
 # ///
 
+import json
 import shutil
 import subprocess
 import sys
@@ -39,3 +40,29 @@ def publish_set(repo: Path) -> list[str]:
         seen.add(p)
         out.append(p.decode("utf-8", errors="replace"))
     return sorted(out)
+
+
+def parse_findings(report_json: str) -> list[dict]:
+    """Parse a gitleaks JSON report into normalized finding dicts.
+
+    Each finding has: file, line, rule, description, snippet.
+    """
+    text = report_json.strip()
+    if not text or text == "null":
+        return []
+    raw = json.loads(text)
+    if raw is None:
+        return []
+    out: list[dict] = []
+    for item in raw:
+        match = item.get("Match", "") or item.get("Secret", "")
+        out.append(
+            {
+                "file": item.get("File", ""),
+                "line": int(item.get("StartLine", 0) or 0),
+                "rule": item.get("RuleID", ""),
+                "description": item.get("Description", ""),
+                "snippet": match,
+            }
+        )
+    return out
