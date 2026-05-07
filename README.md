@@ -35,6 +35,16 @@ After installing, the `gh-read` skill activates whenever Claude needs to query t
 
 Design notes: [`docs/gh-read.md`](docs/gh-read.md).
 
+### public-ready
+
+Pre-publication scan for the current Git repository. Flags secrets (via `gitleaks`) and personal/internal info (via a Claude-driven layer) in the content that would become public on the next `git push`. Invoked as the `/public-ready` slash command or by asking Claude in plain language ("is this safe to make public?").
+
+```
+/plugin install public-ready@yngvark
+```
+
+Design notes: [`docs/superpowers/specs/2026-05-07-public-ready-plugin-design.md`](docs/superpowers/specs/2026-05-07-public-ready-plugin-design.md).
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
