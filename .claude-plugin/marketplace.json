@@ -24,6 +24,14 @@
       "author": {
         "name": "Yngvar Kristiansen"
       }
+    },
+    {
+      "name": "public-ready",
+      "source": "./plugins/public-ready",
+      "description": "Pre-publication scan for the current repo. Flags secrets (via gitleaks) and personal/internal info (via Claude) in content that would become public on the next push.",
+      "author": {
+        "name": "Yngvar Kristiansen"
+      }
     }
   ]
 }
