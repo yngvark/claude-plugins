@@ -193,6 +193,43 @@ class TestFormatReportSection:
 
 
 # ---------------------------------------------------------------------------
+# filter_to_publish_set
+# ---------------------------------------------------------------------------
+
+
+class TestFilterToPublishSet:
+    def test_keeps_findings_in_publish_set(self) -> None:
+        findings = [
+            {"file": "leak.txt", "line": 1, "rule": "r", "description": "d", "snippet": "s"},
+        ]
+        out = scan.filter_to_publish_set(findings, ["leak.txt", "clean.txt"], Path("/repo"))
+        assert len(out) == 1
+
+    def test_drops_findings_outside_publish_set(self) -> None:
+        findings = [
+            {"file": "untracked.txt", "line": 1, "rule": "r", "description": "d", "snippet": "s"},
+        ]
+        out = scan.filter_to_publish_set(findings, ["other.txt"], Path("/repo"))
+        assert out == []
+
+    def test_normalizes_absolute_paths(self) -> None:
+        # gitleaks 8.30+ emits absolute file paths. Filter must still match
+        # them against the repo-relative publish set.
+        findings = [
+            {
+                "file": "/repo/sub/leak.txt",
+                "line": 1,
+                "rule": "r",
+                "description": "d",
+                "snippet": "s",
+            },
+        ]
+        out = scan.filter_to_publish_set(findings, ["sub/leak.txt"], Path("/repo"))
+        assert len(out) == 1
+        assert out[0]["file"] == "sub/leak.txt"
+
+
+# ---------------------------------------------------------------------------
 # End-to-end: missing gitleaks
 # ---------------------------------------------------------------------------
 

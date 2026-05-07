@@ -114,9 +114,33 @@ def run_gitleaks(repo: Path, report_path: Path) -> None:
         )
 
 
-def filter_to_publish_set(findings: list[dict], publish: list[str]) -> list[dict]:
-    publish_set_norm = set(publish)
-    return [f for f in findings if f["file"] in publish_set_norm]
+def filter_to_publish_set(
+    findings: list[dict], publish: list[str], repo: Path
+) -> list[dict]:
+    """Return findings whose file is in the publish set.
+
+    Normalizes finding paths to be relative to ``repo`` (gitleaks 8.30+ emits
+    absolute paths) and rewrites the ``file`` field so downstream output is
+    consistent regardless of gitleaks version.
+    """
+    publish_norm = set(publish)
+    repo_resolved = repo.resolve()
+    out: list[dict] = []
+    for f in findings:
+        raw = f["file"]
+        path = Path(raw)
+        if path.is_absolute():
+            try:
+                rel = str(path.resolve().relative_to(repo_resolved))
+            except ValueError:
+                continue
+        else:
+            rel = raw
+        if rel in publish_norm:
+            normalized = dict(f)
+            normalized["file"] = rel
+            out.append(normalized)
+    return out
 
 
 def main() -> int:
@@ -137,7 +161,7 @@ def main() -> int:
         report_text = report_path.read_text() if report_path.exists() else ""
 
     all_findings = parse_findings(report_text)
-    findings = filter_to_publish_set(all_findings, publish)
+    findings = filter_to_publish_set(all_findings, publish, repo)
 
     print("## Secrets")
     print()
