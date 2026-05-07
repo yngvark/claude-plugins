@@ -66,3 +66,19 @@ def parse_findings(report_json: str) -> list[dict]:
             }
         )
     return out
+
+
+def format_report_section(findings: list[dict]) -> str:
+    """Format a list of finding dicts as a markdown bullet list.
+
+    Returns a single string ready to be embedded under a section heading.
+    """
+    if not findings:
+        return "_No secrets detected by gitleaks._"
+    lines: list[str] = []
+    for f in findings:
+        lines.append(
+            f"- **{f['file']}:{f['line']}** — `{f['rule']}` "
+            f"({f['description']}): `{f['snippet']}`"
+        )
+    return "\n".join(lines)
