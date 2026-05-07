@@ -6,6 +6,7 @@
 # ///
 
 import os
+import shutil
 import subprocess
 import sys
 from importlib.machinery import SourceFileLoader
@@ -189,6 +190,43 @@ class TestFormatReportSection:
         assert "b.py:2" in out
         assert "r1" in out
         assert "r2" in out
+
+
+# ---------------------------------------------------------------------------
+# End-to-end: missing gitleaks
+# ---------------------------------------------------------------------------
+
+
+def _run_script(args: list[str], cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, SCRIPT, *args],
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+
+class TestMissingGitleaks:
+    def test_exits_nonzero_with_install_hint(self, tmp_path: Path) -> None:
+        _init_repo(tmp_path)
+        (tmp_path / "f.txt").write_text("hello")
+        _git(tmp_path, "add", "f.txt")
+        _git(tmp_path, "commit", "-q", "-m", "init")
+
+        # PATH that contains git but not gitleaks. We point PATH at a directory
+        # holding only a symlink to git.
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        os.symlink(shutil.which("git"), bin_dir / "git")
+
+        env = {**os.environ, "PATH": str(bin_dir)}
+        r = _run_script([], cwd=tmp_path, env=env)
+
+        assert r.returncode != 0
+        assert "gitleaks" in r.stderr.lower()
+        # Install hint should mention at least one install method.
+        assert "brew" in r.stderr.lower() or "install" in r.stderr.lower()
 
 
 if __name__ == "__main__":
