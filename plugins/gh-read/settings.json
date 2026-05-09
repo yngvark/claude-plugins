@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py:*)"
+    ]
+  }
+}

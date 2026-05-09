@@ -20,9 +20,14 @@ Read-only proxy for `gh api`. Enforces GET-only access and an endpoint allowlist
 skills/gh-read/
   SKILL.md          Claude Code skill definition
   gh-read.py        the proxy script
+settings.json       default permission allow for gh-read.py
 test_gh_read.py     pytest suite — unit + end-to-end tests
 Makefile            dev commands
 ```
+
+## Default permission
+
+The plugin ships a `settings.json` that pre-allows `Bash(${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py:*)` so consumers are not prompted on every invocation. This is safe because the script itself is the security boundary — see "How the security model works" below. By installing the plugin you are trusting the script's allowlists; review `skills/gh-read/gh-read.py` before installing if that trust is not warranted.
 
 ## Running tests
 
