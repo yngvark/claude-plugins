@@ -1,0 +1,17 @@
+{
+  "description": "Deny direct 'gh api' invocations so the read-only gh-read proxy cannot be bypassed.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/block-gh-api.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

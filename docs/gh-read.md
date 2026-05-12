@@ -154,3 +154,56 @@ Same as `one-shot`:
 - No CI to run `make test` on the marketplace repo. (Possible follow-up; not required for the plugin to be usable.)
 - No edit to `gh-read.py` itself — same allowlists, same behavior.
 - No automated migration off `~/.claude/skills/gh-read/`. The user's local copy and CLAUDE.md reference are left intact; cleanup is documented and manual.
+
+## v0.2.0 — `PreToolUse` enforcement hook
+
+### Why
+
+The skill body says "NEVER use `gh api` directly." That is advisory: the model can ignore it, and the user only finds out after the mutation. Adding a `PreToolUse` hook turns the rule into a hard gate enforced by the Claude Code harness itself, independent of model compliance.
+
+### What is blocked
+
+The hook (`hooks/block-gh-api.py`) inspects every Bash command and denies the call if the regex `\bgh\s+api\b` matches. That covers:
+
+- `gh api ...` at the start of a command
+- `... && gh api ...`, `... ; gh api ...`, `gh api ... | jq ...`, `$(gh api ...)`, `(gh api ...)`
+- `bash -c 'gh api ...'` (the inner string is still scanned)
+
+Other `gh` subcommands are not affected. The user explicitly relies on `gh pr create`, `gh issue create`, `gh run view --log`, `gh auth status`, etc. The block targets only the open-ended `api` subcommand, which is the only `gh` surface that can call arbitrary endpoints.
+
+### What is NOT blocked (deliberate)
+
+- `gh-read.py ...` — different command name; the regex requires whitespace between `gh` and `api`.
+- `echo "gh api"` — false positive, but harmless and unrealistic.
+- Adversarial obfuscation (e.g., `g""h api ...`, base64-decoded execution). The hook is a tripwire for honest mistakes by the model, not a sandbox against a compromised model.
+
+### Why a separate Python script over a bash hook
+
+- Stdlib-only Python (`#!/usr/bin/env python3`) — no `jq` dependency, runs without uv overhead.
+- Cleaner JSON parsing and output construction; testable as a unit (see `test_hook.py`).
+- Startup cost (~30–50 ms) is acceptable for a `PreToolUse` hook on Bash calls.
+
+### Hook output
+
+On a match, the hook prints a `PreToolUse` decision:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Direct use of 'gh api' is blocked … Use ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py …"
+  }
+}
+```
+
+On no match, the hook exits 0 with empty stdout. Malformed input (non-JSON, missing fields, non-string `command`) also exits 0 silently, so the hook fails open — a broken hook never blocks legitimate work.
+
+### Tests
+
+`test_hook.py` (23 tests) covers: every form of `gh api` invocation denied, every legitimate command allowed, non-Bash tools ignored, malformed input handled. Run with `make test` alongside the existing `test_gh_read.py` suite.
+
+### Limitations to be aware of
+
+- Hooks load at session start. Editing `hooks/hooks.json` or `block-gh-api.py` does not affect the current Claude Code session — must restart.
+- The user's global `CLAUDE.md` already says "NEVER use `gh api` directly." That instruction is preserved as documentation; the hook is now the enforcement layer.

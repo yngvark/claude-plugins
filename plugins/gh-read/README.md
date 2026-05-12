@@ -20,8 +20,12 @@ Read-only proxy for `gh api`. Enforces GET-only access and an endpoint allowlist
 skills/gh-read/
   SKILL.md          Claude Code skill definition
   gh-read.py        the proxy script
+hooks/
+  hooks.json        PreToolUse hook registration
+  block-gh-api.py   denies any Bash command invoking `gh api`
 settings.json       default permission allow for gh-read.py
-test_gh_read.py     pytest suite — unit + end-to-end tests
+test_gh_read.py     pytest suite — unit + end-to-end tests for the proxy
+test_hook.py        pytest suite — tests for the block-gh-api hook
 Makefile            dev commands
 ```
 
@@ -39,7 +43,9 @@ This runs `uv run --script test_gh_read.py`, which installs pytest into an isola
 
 ## How the security model works
 
-Two allowlists gate every invocation:
+A `PreToolUse` hook (`hooks/block-gh-api.py`) denies any Bash command containing a `gh api` invocation, so the proxy cannot be bypassed even if the model ignores the skill instructions. Other `gh` subcommands (`gh pr view`, `gh run view --log`, `gh auth status`, …) are unaffected.
+
+Inside the proxy itself, two allowlists gate every invocation:
 
 1. **Path allowlist** — only `repos/{owner}/{repo}/{resource}` paths and `search/{type}` paths are permitted, where each segment is one of a fixed set. Checked via string splitting, no regex; query strings and fragments are stripped before validation.
 
