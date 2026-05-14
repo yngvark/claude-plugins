@@ -21,7 +21,7 @@ Never write user preferences inside the plugin tree — plugin updates would clo
 
 ## Rule 1 — delegate every clarifying question
 
-Whenever you would otherwise ask the user a clarifying question, do NOT ask the user. Instead, spawn the `one-shot-decider` subagent via the `Agent` tool with `subagent_type: one-shot-decider` and use its answer.
+Whenever you would otherwise ask the user a clarifying question, do NOT ask the user. Instead, spawn the decider subagent via the `Agent` tool with `subagent_type: one-shot:one-shot-decider` (the plugin-namespaced form — the unqualified `one-shot-decider` will fail with "Agent type not found") and use its answer.
 
 This applies to:
 - Clarifying questions during brainstorming, design, or planning.
