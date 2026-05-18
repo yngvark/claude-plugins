@@ -1,0 +1,16 @@
+{
+  "description": "On SessionEnd, print a one-line nudge suggesting /session-review.",
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-end-nudge.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

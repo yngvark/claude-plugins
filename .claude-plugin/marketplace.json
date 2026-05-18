@@ -32,6 +32,14 @@
       "author": {
         "name": "Yngvar Kristiansen"
       }
+    },
+    {
+      "name": "session-review",
+      "source": "./plugins/session-review",
+      "description": "Retrospect on the just-completed session and propose CLAUDE.md updates + skill candidates that would help future sessions.",
+      "author": {
+        "name": "Yngvar Kristiansen"
+      }
     }
   ]
 }

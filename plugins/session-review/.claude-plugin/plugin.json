@@ -1,0 +1,10 @@
+{
+  "name": "session-review",
+  "version": "0.1.0",
+  "description": "Retrospect on the just-completed session and propose CLAUDE.md updates + skill candidates that would help future sessions.",
+  "author": {
+    "name": "Yngvar Kristiansen"
+  },
+  "keywords": ["session", "retrospective", "claude-md", "memory", "skills"],
+  "license": "MIT"
+}
