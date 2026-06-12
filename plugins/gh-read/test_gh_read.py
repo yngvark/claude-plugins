@@ -72,6 +72,20 @@ class TestPathAllowed:
     def test_comments(self):
         assert is_path_allowed("repos/owner/repo/comments/99")
 
+    def test_branches(self):
+        assert is_path_allowed("repos/owner/repo/branches")
+
+    def test_branches_with_name(self):
+        assert is_path_allowed("repos/owner/repo/branches/main")
+
+    def test_branches_protection(self):
+        assert is_path_allowed("repos/owner/repo/branches/main/protection")
+
+    def test_branches_protection_sub_resource(self):
+        assert is_path_allowed(
+            "repos/owner/repo/branches/main/protection/required_status_checks"
+        )
+
     def test_git_refs(self):
         assert is_path_allowed("repos/owner/repo/git/refs")
 

@@ -1,6 +1,6 @@
 {
   "name": "gh-read",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Read-only GitHub API proxy. Forces GET and an endpoint allowlist so Claude Code cannot mutate GitHub state.",
   "author": {
     "name": "Yngvar Kristiansen"
