@@ -45,6 +45,16 @@ Pre-publication scan for the current Git repository. Flags secrets (via `gitleak
 
 Design notes: [`docs/superpowers/specs/2026-05-07-public-ready-plugin-design.md`](docs/superpowers/specs/2026-05-07-public-ready-plugin-design.md).
 
+### notes
+
+A "second brain" for a plain Markdown notes folder (e.g. an Obsidian vault). `/note` jots a quick thought into the folder as a new file; `/daily-notes-add-title` renames bare `yyyy-mm-dd.md` daily notes to include a descriptive title based on their contents. Point `$OBSIDIAN_NOTES_DIR` at your folder.
+
+```
+/plugin install notes@yngvark
+```
+
+Design notes: [`docs/notes.md`](docs/notes.md).
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).

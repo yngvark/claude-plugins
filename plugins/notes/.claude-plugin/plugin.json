@@ -1,0 +1,10 @@
+{
+  "name": "notes",
+  "version": "0.1.0",
+  "description": "Second-brain notes for a Markdown/Obsidian folder. Jot quick thoughts to their own files, and give bare yyyy-mm-dd daily notes a descriptive title.",
+  "author": {
+    "name": "Yngvar Kristiansen"
+  },
+  "keywords": ["notes", "obsidian", "second-brain", "markdown", "daily-notes"],
+  "license": "MIT"
+}
