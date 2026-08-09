@@ -53,6 +53,15 @@ Inside the proxy itself, two allowlists gate every invocation:
 
 Additionally, `--method GET` is always passed explicitly as defense-in-depth.
 
+## Temporarily bypassing the plugin
+
+If the allowlist blocks a legitimate read mid-task and you don't have time to update the skill:
+
+- **Disable the plugin for the session:** run `/plugin disable gh-read@yngvark`, then `/reload-plugins`. The reload is required — without it the hook keeps firing until the session ends. Re-enable with `/plugin enable gh-read@yngvark` + `/reload-plugins` when done.
+- **Run the call yourself:** execute the `gh api` command in your own terminal. The hook only intercepts Claude's Bash tool, not commands you run outside it.
+
+There is no way to skip the hook for a single command. Afterwards, consider adding the endpoint to the allowlist (see below) or filing an issue.
+
 ## Adding a new allowed endpoint
 
 1. Edit `skills/gh-read/gh-read.py`:
