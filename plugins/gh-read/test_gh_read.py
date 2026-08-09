@@ -101,6 +101,18 @@ class TestPathAllowed:
     def test_actions_workflows(self):
         assert is_path_allowed("repos/owner/repo/actions/workflows")
 
+    def test_repo_properties_values(self):
+        assert is_path_allowed("repos/owner/repo/properties/values")
+
+    def test_org_properties_schema(self):
+        assert is_path_allowed("orgs/myorg/properties/schema")
+
+    def test_org_properties_schema_with_name(self):
+        assert is_path_allowed("orgs/myorg/properties/schema/my-prop")
+
+    def test_org_properties_values(self):
+        assert is_path_allowed("orgs/myorg/properties/values")
+
     def test_query_string_on_resource(self):
         assert is_path_allowed("repos/owner/repo/pulls?state=closed")
 
@@ -144,6 +156,15 @@ class TestPathAllowed:
 
     def test_reject_orgs(self):
         assert not is_path_allowed("orgs/myorg/repos")
+
+    def test_reject_repo_properties_bare(self):
+        assert not is_path_allowed("repos/owner/repo/properties")
+
+    def test_reject_org_properties_bare(self):
+        assert not is_path_allowed("orgs/myorg/properties")
+
+    def test_reject_org_empty_name(self):
+        assert not is_path_allowed("orgs//properties/schema")
 
     def test_reject_empty_owner(self):
         assert not is_path_allowed("repos//repo/issues")

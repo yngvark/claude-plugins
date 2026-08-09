@@ -27,6 +27,13 @@ ALLOWED_NESTED_RESOURCES = {
     ("git", "refs"),
     ("actions", "runs"),
     ("actions", "workflows"),
+    ("properties", "values"),
+}
+
+# Allowed resources under orgs/{org}/{group}/{sub}
+ALLOWED_ORG_NESTED_RESOURCES = {
+    ("properties", "schema"),
+    ("properties", "values"),
 }
 
 # Allowed search types under search/{type}
@@ -49,6 +56,13 @@ def is_path_allowed(path: str) -> bool:
     # search/{type}
     if parts[0] == "search":
         return len(parts) == 2 and parts[1] in ALLOWED_SEARCH_TYPES
+    # orgs/{org}/{group}/{sub}[/...]
+    if parts[0] == "orgs":
+        return (
+            len(parts) >= 4
+            and bool(parts[1])
+            and (parts[2], parts[3]) in ALLOWED_ORG_NESTED_RESOURCES
+        )
     # Must start with: repos / {owner} / {repo} / {resource...}
     if len(parts) < 4 or parts[0] != "repos":
         return False
@@ -88,6 +102,8 @@ Allowed path patterns:
   repos/{owner}/{repo}/{issues,pulls,commits,contents,compare,releases,comments,branches}[/...]
   repos/{owner}/{repo}/git/refs[/...]
   repos/{owner}/{repo}/actions/{runs,workflows}[/...]
+  repos/{owner}/{repo}/properties/values
+  orgs/{org}/properties/{schema,values}[/...]
   search/{issues,repositories,code,commits,users,labels,topics}
 
 Allowed flags:
@@ -153,7 +169,8 @@ def main() -> None:
     if not is_path_allowed(api_path):
         print(f"REJECTED: path '{api_path}' is not in the read-safe allowlist.", file=sys.stderr)
         print("Allowed patterns:", file=sys.stderr)
-        print("  repos/{owner}/{repo}/{issues,pulls,commits,git/refs,actions/runs,actions/workflows,contents,compare,releases,comments,branches}", file=sys.stderr)
+        print("  repos/{owner}/{repo}/{issues,pulls,commits,git/refs,actions/runs,actions/workflows,contents,compare,releases,comments,branches,properties/values}", file=sys.stderr)
+        print("  orgs/{org}/properties/{schema,values}", file=sys.stderr)
         print("  search/{issues,repositories,code,commits,users,labels,topics}", file=sys.stderr)
         sys.exit(1)
 

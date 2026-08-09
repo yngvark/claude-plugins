@@ -47,7 +47,7 @@ A `PreToolUse` hook (`hooks/block-gh-api.py`) denies any Bash command containing
 
 Inside the proxy itself, two allowlists gate every invocation:
 
-1. **Path allowlist** — only `repos/{owner}/{repo}/{resource}` paths and `search/{type}` paths are permitted, where each segment is one of a fixed set. Checked via string splitting, no regex; query strings and fragments are stripped before validation.
+1. **Path allowlist** — only `repos/{owner}/{repo}/{resource}` paths, `orgs/{org}/properties/{schema,values}` paths, and `search/{type}` paths are permitted, where each segment is one of a fixed set. Checked via string splitting, no regex; query strings and fragments are stripped before validation.
 
 2. **Flag allowlist** — only known-safe flags (`--jq`, `--paginate`, `--header`, `--cache`, `--template`, `--preview` and their short forms) pass through. Everything else is rejected. This protects against unknown or future `gh api` flags that could trigger writes.
 

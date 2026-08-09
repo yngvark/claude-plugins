@@ -56,6 +56,11 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/issues?state=op
 # Use --preview for API previews
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/pulls --preview mercy
 
+# Custom properties (repo values, org schema/values)
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/properties/values
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py orgs/ORG/properties/schema
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py orgs/ORG/properties/values
+
 # Search across GitHub (issues, repos, code, commits, users, labels, topics)
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'search/issues?q=repo:OWNER/REPO+is:open+freeze'
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'search/repositories?q=language:rust+stars:>1000'
@@ -63,7 +68,8 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'search/repositories?q=language:
 
 ## Allowed paths
 
-- `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches` (plus any sub-paths).
+- `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches`, `properties/values` (plus any sub-paths).
+- `orgs/{org}/properties/schema` and `orgs/{org}/properties/values` (custom properties).
 - `search/{type}` where `{type}` is one of: `issues`, `repositories`, `code`, `commits`, `users`, `labels`, `topics`.
 
 ## What's blocked
