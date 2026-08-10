@@ -48,6 +48,14 @@
       "author": {
         "name": "Yngvar Kristiansen"
       }
+    },
+    {
+      "name": "playwright-cli",
+      "source": "./plugins/playwright-cli",
+      "description": "Browser automation through the playwright-cli command: navigate pages, fill forms, snapshot and screenshot, mock requests, and verify frontend changes.",
+      "author": {
+        "name": "Yngvar Kristiansen"
+      }
     }
   ]
 }

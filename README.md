@@ -55,6 +55,16 @@ A "second brain" for a plain Markdown notes folder (e.g. an Obsidian vault). `/n
 
 Design notes: [`docs/notes.md`](docs/notes.md).
 
+### playwright-cli
+
+Browser automation through the `playwright-cli` binary — navigate pages, fill forms, click, snapshot, screenshot, mock requests, record traces and video. Install this to make a global "verify UI changes with the playwright-cli skill" rule work in every repo, rather than only the ones carrying a local copy of the skill.
+
+```
+/plugin install playwright-cli@yngvark
+```
+
+Design notes: [`docs/playwright-cli.md`](docs/playwright-cli.md).
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
