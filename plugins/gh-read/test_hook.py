@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -17,13 +18,17 @@ import pytest
 HOOK_SCRIPT = Path(__file__).parent / "hooks" / "block-gh-api.py"
 
 
-def run_hook(event: dict) -> tuple[int, dict | None, str]:
+def run_hook(event: dict, plugin_root: str | None = None) -> tuple[int, dict | None, str]:
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PLUGIN_ROOT"}
+    if plugin_root is not None:
+        env["CLAUDE_PLUGIN_ROOT"] = plugin_root
     proc = subprocess.run(
         [sys.executable, str(HOOK_SCRIPT)],
         input=json.dumps(event),
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
     out = proc.stdout.strip()
     parsed = json.loads(out) if out else None
@@ -61,6 +66,21 @@ class TestDeniesGhApi:
         decision = out["hookSpecificOutput"]
         assert decision["permissionDecision"] == "deny"
         assert "gh-read" in decision["permissionDecisionReason"]
+
+
+class TestDenyReasonPath:
+    def test_plugin_root_is_expanded(self) -> None:
+        _, out, _ = run_hook(bash_event("gh api /user"), plugin_root="/plugins/gh-read")
+        assert out is not None
+        reason = out["hookSpecificOutput"]["permissionDecisionReason"]
+        assert "/plugins/gh-read/skills/gh-read/gh-read.py" in reason
+        assert "${CLAUDE_PLUGIN_ROOT}" not in reason
+
+    def test_falls_back_to_placeholder_when_unset(self) -> None:
+        _, out, _ = run_hook(bash_event("gh api /user"))
+        assert out is not None
+        reason = out["hookSpecificOutput"]["permissionDecisionReason"]
+        assert "${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py" in reason
 
 
 class TestAllowsLegitimateCommands:

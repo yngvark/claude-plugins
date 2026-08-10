@@ -11,17 +11,23 @@ Stdlib-only so it runs without uv/dependencies on every Bash call.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 
 GH_API_PATTERN = re.compile(r"\bgh\s+api\b")
 
-DENY_REASON = (
-    "Direct use of 'gh api' is blocked by the gh-read plugin. "
-    "Use ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py instead — "
-    "it enforces GET-only access and an endpoint allowlist. "
-    "Run it with --help to see allowed paths and flags."
-)
+
+def deny_reason() -> str:
+    # Claude Code expands ${CLAUDE_PLUGIN_ROOT} in plugin config and skill text,
+    # but not in hook output — resolve it here so the message is copy-pasteable.
+    plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", "${CLAUDE_PLUGIN_ROOT}")
+    return (
+        "Direct use of 'gh api' is blocked by the gh-read plugin. "
+        f"Use {plugin_root}/skills/gh-read/gh-read.py instead — "
+        "it enforces GET-only access and an endpoint allowlist. "
+        "Run it with --help to see allowed paths and flags."
+    )
 
 
 def evaluate(event: dict) -> dict | None:
@@ -35,7 +41,7 @@ def evaluate(event: dict) -> dict | None:
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "deny",
-                "permissionDecisionReason": DENY_REASON,
+                "permissionDecisionReason": deny_reason(),
             }
         }
     return None

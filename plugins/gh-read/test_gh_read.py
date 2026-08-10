@@ -362,6 +362,17 @@ class TestEndToEnd:
         assert r.returncode == 0
         assert "Usage" in r.stdout
 
+    def test_help_after_positional(self):
+        r = run(["repos/o/r/issues", "--help"])
+        assert r.returncode == 0
+        assert "Usage" in r.stdout
+
+    def test_help_after_stray_arg(self):
+        # e.g. a shell glob that matched two script paths, shifting --help
+        r = run(["/some/other/gh-read.py", "--help"])
+        assert r.returncode == 0
+        assert "Usage" in r.stdout
+
     def test_no_path(self):
         r = run(["--jq", ".items"])
         assert r.returncode == 1

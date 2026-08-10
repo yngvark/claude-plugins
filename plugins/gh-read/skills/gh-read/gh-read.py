@@ -129,7 +129,9 @@ def main() -> None:
         print(USAGE, file=sys.stderr)
         sys.exit(1)
 
-    if args[0] in ("--help", "-h"):
+    # Accept help anywhere in argv — an unexpanded glob or a stray leading arg
+    # would otherwise push --help past position 0 and get it rejected as a flag.
+    if any(arg in ("--help", "-h") for arg in args):
         print(USAGE)
         sys.exit(0)
 
