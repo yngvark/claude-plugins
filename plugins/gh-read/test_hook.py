@@ -76,11 +76,76 @@ class TestDenyReasonPath:
         assert "/plugins/gh-read/skills/gh-read/gh-read.py" in reason
         assert "${CLAUDE_PLUGIN_ROOT}" not in reason
 
-    def test_falls_back_to_placeholder_when_unset(self) -> None:
+    def test_falls_back_to_own_location_when_unset(self) -> None:
         _, out, _ = run_hook(bash_event("gh api /user"))
         assert out is not None
         reason = out["hookSpecificOutput"]["permissionDecisionReason"]
-        assert "${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py" in reason
+        expected = HOOK_SCRIPT.resolve().parent.parent / "skills" / "gh-read" / "gh-read.py"
+        assert str(expected) in reason
+        assert "${CLAUDE_PLUGIN_ROOT}" not in reason
+
+
+class TestDenyReasonIsActionable:
+    def test_reason_includes_rewritten_command(self) -> None:
+        _, out, _ = run_hook(bash_event("gh api repos/foo/bar/issues --jq '.[].title'"))
+        assert out is not None
+        reason = out["hookSpecificOutput"]["permissionDecisionReason"]
+        assert "skills/gh-read/gh-read.py repos/foo/bar/issues --jq '.[].title'" in reason
+
+    def test_reason_rewrites_only_the_gh_api_invocation(self) -> None:
+        _, out, _ = run_hook(bash_event("ls && gh api /user"))
+        assert out is not None
+        reason = out["hookSpecificOutput"]["permissionDecisionReason"]
+        assert "ls && " in reason
+        assert "gh-read.py /user" in reason
+
+    def test_reason_explains_how_to_extend_the_allowlist(self) -> None:
+        _, out, _ = run_hook(bash_event("gh api repos/foo/bar/secrets"))
+        assert out is not None
+        reason = out["hookSpecificOutput"]["permissionDecisionReason"]
+        assert "ALLOWED_RESOURCES" in reason
+        assert "github.com/yngvark/claude-plugins" in reason
+        assert "consent" in reason
+
+
+class TestProseMentionsAreNotCommands:
+    """Text that merely names the blocked command must not trip the hook."""
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "git commit -F - <<'EOF'\nfix: stop using gh api directly\nEOF",
+            'git commit -F - <<"MSG"\nnote: gh api is blocked\nMSG',
+            "cat > notes.md <<'EOF'\nNever call gh api yourself.\nEOF",
+            "git commit -m 'docs: explain why gh api is blocked'",
+            'git commit -m "docs: explain why gh api is blocked"',
+            'git commit --message="gh api notes"',
+        ],
+    )
+    def test_prose_passes(self, command: str) -> None:
+        code, out, _ = run_hook(bash_event(command))
+        assert code == 0
+        assert out is None, f"expected no decision, got: {out!r} for: {command!r}"
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            # Heredoc fed to an interpreter: the body is code, not data.
+            "bash <<'EOF'\ngh api /user\nEOF",
+            "python3 - <<'PY'\nsubprocess.run('gh api /user')\nPY",
+            "sh <<'EOF'\ngh api /user\nEOF",
+            # Unquoted delimiter: the shell substitutes inside the body.
+            "cat <<EOF\n$(gh api /user)\nEOF",
+            # Real command after the heredoc closes.
+            "git commit -F - <<'EOF'\nmessage text\nEOF\ngh api /user",
+            # A message flag does not exempt the rest of the line.
+            "git commit -m 'msg' && gh api /user",
+        ],
+    )
+    def test_still_denied(self, command: str) -> None:
+        code, out, _ = run_hook(bash_event(command))
+        assert code == 0
+        assert out is not None, f"expected deny, got nothing for: {command!r}"
 
 
 class TestAllowsLegitimateCommands:

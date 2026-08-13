@@ -174,8 +174,24 @@ Other `gh` subcommands are not affected. The user explicitly relies on `gh pr cr
 ### What is NOT blocked (deliberate)
 
 - `gh-read.py ...` — different command name; the regex requires whitespace between `gh` and `api`.
-- `echo "gh api"` — false positive, but harmless and unrealistic.
 - Adversarial obfuscation (e.g., `g""h api ...`, base64-decoded execution). The hook is a tripwire for honest mistakes by the model, not a sandbox against a compromised model.
+
+### Prose that merely names the command
+
+The regex matches text, not syntax, so a command whose *arguments* discuss `gh api` used to be blocked along with real calls. Writing a commit message about this plugin — `git commit -F - <<'EOF' … gh api … EOF` — was denied even though nothing touched GitHub. That is not a harmless false positive: it blocks work on the plugin itself, and the agent has no way to tell a genuine block from a spurious one.
+
+`strip_inert_text()` blanks two regions before scanning:
+
+- **Quoted heredoc bodies** (`<<'EOF'`, `<<-"EOF"`). A quoted delimiter tells the shell to perform no expansion or command substitution, so the body is literal data.
+- **Git message arguments** (`-m '…'`, `--message="…"`, when the command is `git commit`/`tag`/`merge`/`revert`/`stash`/`notes`). Git never executes message text.
+
+Each exemption is also a place to hide a real call, so both are kept narrow:
+
+- A quoted heredoc is only exempt when no interpreter (`bash`, `sh`, `python`, `uv`, `xargs`, `eval`, …) appears on the line opening it. `bash <<'EOF'` still gets scanned, because that body *is* code.
+- An unquoted delimiter (`<<EOF`) is never exempt — the shell substitutes `$(…)` inside it.
+- Only the heredoc body is blanked, not the rest of the command. `git commit -m 'msg' && gh api /user` is still denied.
+
+Residual hole: a non-shell interpreter not on the list could read a quoted heredoc and shell out. Consistent with the paragraph above, this is accepted — the hook guards against habit, not intent.
 
 ### Why a separate Python script over a bash hook
 
@@ -185,23 +201,21 @@ Other `gh` subcommands are not affected. The user explicitly relies on `gh pr cr
 
 ### Hook output
 
-On a match, the hook prints a `PreToolUse` decision:
+On a match, the hook prints a `PreToolUse` decision whose `permissionDecisionReason` carries three things:
 
-```json
-{
-  "hookSpecificOutput": {
-    "hookEventName": "PreToolUse",
-    "permissionDecision": "deny",
-    "permissionDecisionReason": "Direct use of 'gh api' is blocked … Use ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py …"
-  }
-}
-```
+1. **Why it was blocked**, and that `gh-read.py` is the replacement.
+2. **The rewritten command**, produced by substituting the script path for `gh api` in the original command. `gh api repos/o/r/issues --jq '.[].title'` comes back as `…/gh-read.py repos/o/r/issues --jq '.[].title'`, so the agent retries correctly on the next turn instead of guessing at syntax.
+3. **The escalation path** if the rewritten call is then rejected as not allowlisted: name the gap to the user, offer a concrete edit to the allowlist constants in `gh-read.py` (or an issue on the marketplace repo), and never act without consent.
+
+Point 3 is duplicated from the skill's "Missing functionality" section on purpose. The deny reason is the *only* text an agent is guaranteed to see — the hook fires on a raw Bash call, at which point the skill body may never have been loaded into context. Without it, an agent that reaches for `gh api` out of habit learns that it is blocked but not that the block is fixable, and either retries variations or silently drops the task.
+
+Claude Code does not expand `${CLAUDE_PLUGIN_ROOT}` in hook stdout, so `script_path()` reads the env var directly, falling back to the hook file's own location when it is unset. The message therefore always carries a real, copy-pasteable path rather than a literal placeholder.
 
 On no match, the hook exits 0 with empty stdout. Malformed input (non-JSON, missing fields, non-string `command`) also exits 0 silently, so the hook fails open — a broken hook never blocks legitimate work.
 
 ### Tests
 
-`test_hook.py` (23 tests) covers: every form of `gh api` invocation denied, every legitimate command allowed, non-Bash tools ignored, malformed input handled. Run with `make test` alongside the existing `test_gh_read.py` suite.
+`test_hook.py` covers: every form of `gh api` invocation denied, the deny reason containing a correct rewrite and the escalation instructions, prose mentions in heredocs and git messages allowed while interpreter-fed heredocs stay denied, every legitimate command allowed, non-Bash tools ignored, malformed input handled. Run with `make test` alongside the existing `test_gh_read.py` suite.
 
 ### Limitations to be aware of
 

@@ -101,6 +101,10 @@ If a legitimate read-only GitHub API call is blocked by this skill (path not on 
    ╚══════════════════════════════════════════════════════════════════╝
    ```
 
-2. Offer to create a GitHub issue at https://github.com/yngvark/claude-plugins describing the gap.
+2. Offer to fix it. The allowlist lives in `${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py` — `ALLOWED_RESOURCES`, `ALLOWED_NESTED_RESOURCES`, `ALLOWED_ORG_NESTED_RESOURCES`, `ALLOWED_SEARCH_TYPES`, `SAFE_FLAGS_NO_ARG`, `SAFE_FLAGS_WITH_ARG`. Propose the concrete edit (plus a test in `test_gh_read.py`, a `SKILL.md` example, and a `version` bump in `.claude-plugin/plugin.json`).
 
-3. **NEVER create the issue without explicit user consent.** Wait for the user to confirm before filing anything.
+   Note the installed copy under `~/.claude/plugins/cache/` is overwritten on update — the edit belongs in a clone of https://github.com/yngvark/claude-plugins.
+
+3. If the user does not want to edit the plugin, offer to file an issue at https://github.com/yngvark/claude-plugins instead.
+
+4. **NEVER edit the plugin or create the issue without explicit user consent.** Wait for the user to confirm.
