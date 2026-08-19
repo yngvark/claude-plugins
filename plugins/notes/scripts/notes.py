@@ -7,13 +7,17 @@
 """Filesystem helpers for the `notes` plugin.
 
 The semantic work (writing a thought, inventing a title from a note's
-contents) is done by Claude. This script only handles the deterministic,
-testable parts: resolving the notes directory, sanitizing titles into safe
-filenames, finding untitled daily notes, and renaming files.
+contents, judging which search hit the user meant) is done by Claude. This
+script only handles the deterministic, testable parts: resolving the notes
+directory, sanitizing titles into safe filenames, locating notes by name or
+content, finding untitled daily notes, and renaming files.
 
 Subcommands:
     resolve-dir                     Print the notes dir ($OBSIDIAN_NOTES_DIR).
     note-path "<title>"             Print a unique, safe path for a new note.
+    find "<query>" [--limit N] [dir]    Find notes whose file name matches.
+    search "<text>" [--limit N] [dir]   Find notes whose contents match.
+    recent [--limit N] [dir]        List the most recently modified notes.
     daily-list [--recursive] [dir]  List untitled daily notes (yyyy-mm-dd.md).
     daily-rename <path> "<title>"   Rename yyyy-mm-dd.md -> yyyy-mm-dd <title>.md
     sanitize "<title>"              Print the sanitized form of a title.
@@ -30,6 +34,8 @@ DAILY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\.md$")
 # Characters that are illegal or awkward in file names across macOS/Windows.
 ILLEGAL = r'/\:*?"<>|'
 MAX_TITLE_LEN = 80
+DEFAULT_LIMIT = 20
+SNIPPET_LEN = 200
 
 
 def sanitize_title(title: str) -> str:
@@ -70,6 +76,79 @@ def unique_path(directory: Path, stem: str, ext: str = ".md") -> Path:
         n += 1
 
 
+def iter_notes(directory: Path):
+    """Yield every Markdown note under `directory`, skipping hidden folders.
+
+    Obsidian keeps `.obsidian/` and `.trash/` next to the notes; neither holds
+    anything the user would call a note.
+    """
+    for p in sorted(directory.rglob("*.md")):
+        rel = p.relative_to(directory)
+        if any(part.startswith(".") for part in rel.parts):
+            continue
+        if p.is_file():
+            yield p
+
+
+def mtime(path: Path) -> float:
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
+def name_score(stem: str, query: str, tokens: list[str]) -> int:
+    """Rank a file name against a query: higher is a better match, 0 is no match."""
+    stem = stem.lower()
+    if stem == query:
+        return 4
+    if stem.startswith(query):
+        return 3
+    if query in stem:
+        return 2
+    if tokens and all(t in stem for t in tokens):
+        return 1
+    return 0
+
+
+def find_notes(directory: Path, query: str, limit: int = DEFAULT_LIMIT) -> list[Path]:
+    """Notes whose file name matches `query`, best match first, then newest."""
+    query = query.strip().lower().removesuffix(".md").strip()
+    tokens = [t for t in re.split(r"\s+", query) if t]
+    scored = []
+    for p in iter_notes(directory):
+        score = name_score(p.stem, query, tokens)
+        if score:
+            scored.append((score, p))
+    scored.sort(key=lambda sp: (-sp[0], -mtime(sp[1]), str(sp[1])))
+    return [p for _, p in scored[:limit]]
+
+
+def search_notes(
+    directory: Path, text: str, limit: int = DEFAULT_LIMIT
+) -> list[tuple[Path, int, str]]:
+    """Lines containing `text` (case-insensitive), at most one hit per note."""
+    needle = text.strip().lower()
+    hits: list[tuple[Path, int, str]] = []
+    if not needle:
+        return hits
+    for p in iter_notes(directory):
+        try:
+            lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            continue
+        for lineno, line in enumerate(lines, start=1):
+            if needle in line.lower():
+                hits.append((p, lineno, line.strip()[:SNIPPET_LEN]))
+                break
+    hits.sort(key=lambda h: (-mtime(h[0]), str(h[0])))
+    return hits[:limit]
+
+
+def recent_notes(directory: Path, limit: int = 10) -> list[Path]:
+    return sorted(iter_notes(directory), key=lambda p: (-mtime(p), str(p)))[:limit]
+
+
 def is_git_tracked(path: Path) -> bool:
     try:
         r = subprocess.run(
@@ -102,6 +181,55 @@ def cmd_note_path(argv: list[str]) -> None:
     if not stem:
         sys.exit("error: title is empty after sanitizing")
     print(unique_path(resolve_dir(), stem))
+
+
+def take_limit(argv: list[str], default: int) -> tuple[int, list[str]]:
+    """Pull `--limit N` (or `--limit=N`) out of argv; return (limit, rest)."""
+    rest: list[str] = []
+    limit = default
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--limit":
+            if i + 1 >= len(argv):
+                sys.exit("error: --limit needs a number")
+            value, i = argv[i + 1], i + 2
+        elif arg.startswith("--limit="):
+            value, i = arg.split("=", 1)[1], i + 1
+        else:
+            rest.append(arg)
+            i += 1
+            continue
+        if not value.isdigit() or int(value) < 1:
+            sys.exit(f"error: --limit must be a positive integer, got {value!r}")
+        limit = int(value)
+    return limit, rest
+
+
+def dir_from(argv: list[str]) -> Path:
+    return Path(argv[0]).expanduser() if argv else resolve_dir()
+
+
+def cmd_find(argv: list[str]) -> None:
+    limit, rest = take_limit(argv, DEFAULT_LIMIT)
+    if not rest:
+        sys.exit('usage: notes.py find "<query>" [--limit N] [dir]')
+    for p in find_notes(dir_from(rest[1:]), rest[0], limit):
+        print(p)
+
+
+def cmd_search(argv: list[str]) -> None:
+    limit, rest = take_limit(argv, DEFAULT_LIMIT)
+    if not rest:
+        sys.exit('usage: notes.py search "<text>" [--limit N] [dir]')
+    for path, lineno, line in search_notes(dir_from(rest[1:]), rest[0], limit):
+        print(f"{path}:{lineno}: {line}")
+
+
+def cmd_recent(argv: list[str]) -> None:
+    limit, rest = take_limit(argv, 10)
+    for p in recent_notes(dir_from(rest), limit):
+        print(p)
 
 
 def cmd_daily_list(argv: list[str]) -> None:
@@ -140,6 +268,9 @@ def cmd_sanitize(argv: list[str]) -> None:
 COMMANDS = {
     "resolve-dir": cmd_resolve_dir,
     "note-path": cmd_note_path,
+    "find": cmd_find,
+    "search": cmd_search,
+    "recent": cmd_recent,
     "daily-list": cmd_daily_list,
     "daily-rename": cmd_daily_rename,
     "sanitize": cmd_sanitize,

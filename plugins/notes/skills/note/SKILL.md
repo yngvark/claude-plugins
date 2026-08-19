@@ -14,6 +14,16 @@ text after it, that text is the note. If they invoked it bare, ask what they
 want to capture (one short question), or — if Claude is capturing something
 from the current conversation on the user's behalf — use that.
 
+## First: is this really a new note?
+
+If the text points at a note that already exists — a file name, "see X.md", "my
+note about Y", "that handoff note" — the user wants that note **read**, not a
+new file containing a pointer to it. Switch to the `read-note` skill instead.
+`See Foo.md — I want to continue that` is a request to open `Foo.md`.
+
+When it's genuinely ambiguous, ask in one line before writing anything. Writing
+is cheap; a junk note the user has to hunt down and delete is not.
+
 ## Steps
 
 1. **Resolve the notes folder.**
@@ -55,3 +65,4 @@ from the current conversation on the user's behalf — use that.
   avoids collisions.
 - Do not reorganize, retitle, or touch other files in the folder — this skill
   only adds one new note per invocation.
+- To read an existing note instead, use `read-note`.
