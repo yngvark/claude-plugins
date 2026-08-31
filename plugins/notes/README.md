@@ -1,7 +1,7 @@
 # notes
 
 A small "second brain" for a plain Markdown notes folder (e.g. an Obsidian
-vault). Three skills:
+vault). Four skills:
 
 - **`/note`** — jot a quick thought, idea, or reminder into the notes folder as
   a new Markdown file (one note per file). You can pass the text directly, or
@@ -13,6 +13,11 @@ vault). Three skills:
   (`2026-07-01.md`) and rename them to include a descriptive title based on
   their contents (`2026-07-01 Meeting with team.md`). The date prefix is always
   kept; only a title is appended.
+- **`/add-date-prefix`** — the other direction: find notes whose name has no
+  date at all (`Standup.md`) and put one in front (`2026-07-01 Standup.md`), so
+  a folder sorts chronologically. The date comes from the file's creation time,
+  its last edit, or the commit that added it. `CLAUDE.md`, `AGENTS.md` and
+  `README.md` are left alone.
 
 ## Install
 
@@ -44,10 +49,16 @@ judging which search hit you meant — is done by Claude. A small helper script
 (`scripts/notes.py`) handles the deterministic, testable parts: resolving the
 notes directory, sanitizing titles into safe filenames, looking notes up by name
 (`find`) or contents (`search`) or recency (`recent`), listing untitled daily
-notes, and renaming files (using `git mv` when the vault is a Git repo, so
-history is preserved). Renames and new files never overwrite an existing file —
-a numeric suffix is added on collision. Lookups skip hidden folders such as
-`.obsidian/` and `.trash/`.
+notes and undated notes, finding the links that point at a note (`link-refs`),
+and renaming files (using `git mv` when the vault is a Git repo, so history is
+preserved). Renames and new files never overwrite an existing file — a numeric
+suffix is added on collision. Lookups skip hidden folders such as `.obsidian/`
+and `.trash/`.
+
+Renaming a note on disk breaks any wikilink or Markdown link pointing at it,
+because Obsidian only rewrites those when the rename happens inside Obsidian.
+That's why `/add-date-prefix` runs `link-refs` over the whole vault first and
+asks you before renaming anything it would break.
 
 ## Development
 

@@ -5,6 +5,7 @@
 # dependencies = ["pytest"]
 # ///
 
+import datetime
 import os
 import subprocess
 import sys
@@ -172,6 +173,168 @@ class TestDailyRegex:
         assert not notes.DAILY_RE.match(name)
 
 
+class TestDatePrefixRegex:
+    @pytest.mark.parametrize(
+        "name", ["2026-07-01.md", "2026-07-01 Standup.md", "1999-12-31 x y.md"]
+    )
+    def test_matches_dated_names(self, name: str):
+        assert notes.has_date_prefix(name)
+
+    @pytest.mark.parametrize(
+        "name",
+        ["Standup.md", "2026-7-1 Standup.md", "20260701 Standup.md", "x 2026-07-01.md"],
+    )
+    def test_rejects_undated_names(self, name: str):
+        assert not notes.has_date_prefix(name)
+
+    def test_rejects_date_glued_to_title(self):
+        # A space (or nothing) must follow the date, so this is not a prefix.
+        assert not notes.has_date_prefix("2026-07-01Standup.md")
+
+
+class TestNoteDate:
+    def test_mtime_source(self, tmp_path: Path):
+        p = tmp_path / "n.md"
+        p.write_text("x")
+        stamp = datetime.datetime(2026, 3, 4, 12, 0).timestamp()
+        os.utime(p, (stamp, stamp))
+        assert notes.note_date(p, "mtime") == "2026-03-04"
+
+    def test_birth_falls_back_to_mtime(self, tmp_path: Path, monkeypatch):
+        p = tmp_path / "n.md"
+        p.write_text("x")
+        stamp = datetime.datetime(2026, 3, 4, 12, 0).timestamp()
+        os.utime(p, (stamp, stamp))
+        real_stat = Path.stat
+
+        class NoBirthTime:
+            """A stat result on a filesystem that records no creation time."""
+
+            def __init__(self, st):
+                self.st_mtime = st.st_mtime
+
+        monkeypatch.setattr(Path, "stat", lambda self, **kw: NoBirthTime(real_stat(self)))
+        assert notes.note_date(p, "birth") == "2026-03-04"
+
+    def test_rejects_unknown_source(self, tmp_path: Path):
+        p = tmp_path / "n.md"
+        p.write_text("x")
+        with pytest.raises(ValueError):
+            notes.note_date(p, "nonsense")
+
+    def test_git_source_uses_adding_commit(self, tmp_path: Path):
+        _git_init(tmp_path)
+        p = tmp_path / "n.md"
+        p.write_text("x")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+        subprocess.run(
+            ["git", "commit", "-qm", "add"],
+            cwd=tmp_path,
+            check=True,
+            env={**os.environ, "GIT_AUTHOR_DATE": "2026-01-15T10:00:00"},
+        )
+        assert notes.note_date(p, "git") == "2026-01-15"
+
+    def test_git_source_falls_back_when_untracked(self, tmp_path: Path):
+        p = tmp_path / "n.md"
+        p.write_text("x")
+        stamp = datetime.datetime(2026, 3, 4, 12, 0).timestamp()
+        os.utime(p, (stamp, stamp))
+        # No repository at all, so there is no adding commit to read.
+        assert notes.note_date(p, "git") == notes.note_date(p, "birth")
+
+
+class TestUndatedNotes:
+    def test_lists_only_undated(self, tmp_path: Path):
+        _vault(tmp_path, {"Standup.md": "x", "2026-07-01 Dated.md": "x"})
+        assert [p.name for p in notes.undated_notes(tmp_path)] == ["Standup.md"]
+
+    def test_skips_default_excludes(self, tmp_path: Path):
+        _vault(
+            tmp_path,
+            {"CLAUDE.md": "x", "AGENTS.md": "x", "README.md": "x", "Note.md": "x"},
+        )
+        assert [p.name for p in notes.undated_notes(tmp_path)] == ["Note.md"]
+
+    def test_extra_excludes(self, tmp_path: Path):
+        _vault(tmp_path, {"Keep.md": "x", "Note.md": "x"})
+        found = notes.undated_notes(tmp_path, excludes=("Keep.md",))
+        assert [p.name for p in found] == ["Note.md"]
+
+    def test_top_level_only_by_default(self, tmp_path: Path):
+        _vault(tmp_path, {"Note.md": "x", "sub/Deep.md": "x"})
+        assert [p.name for p in notes.undated_notes(tmp_path)] == ["Note.md"]
+
+    def test_recursive_includes_subfolders(self, tmp_path: Path):
+        _vault(tmp_path, {"Note.md": "x", "sub/Deep.md": "x"})
+        found = notes.undated_notes(tmp_path, recursive=True)
+        assert {p.name for p in found} == {"Note.md", "Deep.md"}
+
+    def test_recursive_skips_hidden_folders(self, tmp_path: Path):
+        _vault(tmp_path, {"Note.md": "x", ".obsidian/Plugin.md": "x"})
+        found = notes.undated_notes(tmp_path, recursive=True)
+        assert [p.name for p in found] == ["Note.md"]
+
+
+class TestLinkRefs:
+    @pytest.mark.parametrize(
+        "body",
+        [
+            "see [[Demo]] here",
+            "see [[Demo|the demo]]",
+            "see [[Demo#Agenda]]",
+            "embed ![[Demo]]",
+            "see [[ki/Demo]]",
+            "see [the demo](Demo.md)",
+            "see [the demo](ki/Demo.md#Agenda)",
+            "see [the demo](DEMO.md)",
+        ],
+    )
+    def test_finds_link_forms(self, tmp_path: Path, body: str):
+        _vault(tmp_path, {"Demo.md": "x", "Other.md": body})
+        hits = notes.link_refs(tmp_path, "Demo")
+        assert [p.name for p, _, _ in hits] == ["Other.md"]
+
+    def test_finds_percent_encoded_link(self, tmp_path: Path):
+        _vault(tmp_path, {"My note.md": "x", "Other.md": "[x](My%20note.md)"})
+        assert notes.link_refs(tmp_path, "My note")
+
+    def test_accepts_a_path_as_target(self, tmp_path: Path):
+        _vault(tmp_path, {"Demo.md": "x", "Other.md": "[[Demo]]"})
+        assert notes.link_refs(tmp_path, str(tmp_path / "Demo.md"))
+
+    def test_ignores_similar_names(self, tmp_path: Path):
+        _vault(tmp_path, {"Demo.md": "x", "Other.md": "[[Demo notes]] and [[Predemo]]"})
+        assert notes.link_refs(tmp_path, "Demo") == []
+
+    def test_ignores_plain_text_mention(self, tmp_path: Path):
+        _vault(tmp_path, {"Demo.md": "x", "Other.md": "the Demo went fine"})
+        assert notes.link_refs(tmp_path, "Demo") == []
+
+    def test_skips_the_target_itself(self, tmp_path: Path):
+        _vault(tmp_path, {"Demo.md": "[[Demo]] links to itself"})
+        assert notes.link_refs(tmp_path, "Demo") == []
+
+    def test_reports_every_line(self, tmp_path: Path):
+        _vault(tmp_path, {"Demo.md": "x", "Other.md": "[[Demo]]\nplain\n[[Demo]]\n"})
+        assert [n for _, n, _ in notes.link_refs(tmp_path, "Demo")] == [1, 3]
+
+
+class TestTakeRepeated:
+    def test_collects_every_occurrence(self):
+        argv = ["--exclude", "a", "x", "--exclude=b"]
+        assert notes.take_repeated(argv, "--exclude") == (["a", "b"], ["x"])
+
+    def test_absent_flag_returns_empty(self):
+        assert notes.take_repeated(["x"], "--exclude") == ([], ["x"])
+
+
+def _git_init(path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=path, check=True)
+    subprocess.run(["git", "config", "user.email", "t@t.t"], cwd=path, check=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=path, check=True)
+
+
 def _run(*args: str, cwd: Path, env: dict | None = None):
     script = Path(__file__).parent / "scripts" / "notes.py"
     return subprocess.run(
@@ -238,9 +401,7 @@ class TestDailyRenameCli:
         assert "not a bare daily note" in r.stderr
 
     def test_uses_git_mv_when_tracked(self, tmp_path: Path):
-        subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "config", "user.email", "t@t.t"], cwd=tmp_path, check=True)
-        subprocess.run(["git", "config", "user.name", "t"], cwd=tmp_path, check=True)
+        _git_init(tmp_path)
         src = tmp_path / "2026-07-01.md"
         src.write_text("x")
         subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
@@ -321,6 +482,130 @@ class TestRecentCli:
         r = _run("recent", "--limit", "1", str(tmp_path), cwd=tmp_path)
         assert r.returncode == 0, r.stderr
         assert r.stdout.strip() == str(tmp_path / "new.md")
+
+
+class TestUndatedListCli:
+    def test_prints_date_and_path(self, tmp_path: Path):
+        p = tmp_path / "Standup.md"
+        p.write_text("x")
+        (tmp_path / "2026-07-01 Dated.md").write_text("x")
+        stamp = datetime.datetime(2026, 3, 4, 12, 0).timestamp()
+        os.utime(p, (stamp, stamp))
+        r = _run("undated-list", "--date-source", "mtime", str(tmp_path), cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        assert r.stdout == f"2026-03-04\t{p}\n"
+
+    def test_rejects_unknown_date_source(self, tmp_path: Path):
+        r = _run("undated-list", "--date-source", "guess", str(tmp_path), cwd=tmp_path)
+        assert r.returncode != 0
+        assert "--date-source must be one of" in r.stderr
+
+    def test_exclude_flag(self, tmp_path: Path):
+        (tmp_path / "Keep.md").write_text("x")
+        (tmp_path / "Note.md").write_text("x")
+        r = _run("undated-list", "--exclude", "Keep.md", str(tmp_path), cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        assert [line.split("\t")[1] for line in r.stdout.splitlines()] == [
+            str(tmp_path / "Note.md")
+        ]
+
+    def test_uses_env_dir_when_no_dir_given(self, tmp_path: Path):
+        (tmp_path / "Note.md").write_text("x")
+        env = {"OBSIDIAN_NOTES_DIR": str(tmp_path)}
+        r = _run("undated-list", cwd=tmp_path, env=env)
+        assert r.returncode == 0, r.stderr
+        assert str(tmp_path / "Note.md") in r.stdout
+
+
+class TestDatePrefixCli:
+    def test_renames_with_file_date(self, tmp_path: Path):
+        src = tmp_path / "Standup.md"
+        src.write_text("x")
+        stamp = datetime.datetime(2026, 3, 4, 12, 0).timestamp()
+        os.utime(src, (stamp, stamp))
+        r = _run("date-prefix", str(src), "--date-source", "mtime", cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        dst = tmp_path / "2026-03-04 Standup.md"
+        assert dst.is_file()
+        assert not src.exists()
+        assert r.stdout.strip() == str(dst)
+
+    def test_explicit_date_wins(self, tmp_path: Path):
+        src = tmp_path / "Standup.md"
+        src.write_text("x")
+        r = _run("date-prefix", str(src), "--date", "2020-01-02", cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        assert (tmp_path / "2020-01-02 Standup.md").is_file()
+
+    def test_rejects_malformed_date(self, tmp_path: Path):
+        src = tmp_path / "Standup.md"
+        src.write_text("x")
+        r = _run("date-prefix", str(src), "--date", "2/1/2020", cwd=tmp_path)
+        assert r.returncode != 0
+        assert "must be yyyy-mm-dd" in r.stderr
+        assert src.is_file()
+
+    def test_refuses_already_dated_file(self, tmp_path: Path):
+        src = tmp_path / "2026-07-01 Standup.md"
+        src.write_text("x")
+        r = _run("date-prefix", str(src), cwd=tmp_path)
+        assert r.returncode != 0
+        assert "already starts with a date" in r.stderr
+        assert src.is_file()
+
+    def test_errors_on_missing_file(self, tmp_path: Path):
+        r = _run("date-prefix", str(tmp_path / "nope.md"), cwd=tmp_path)
+        assert r.returncode != 0
+        assert "does not exist" in r.stderr
+
+    def test_collision_gets_suffix(self, tmp_path: Path):
+        (tmp_path / "2020-01-02 Standup.md").write_text("existing")
+        src = tmp_path / "Standup.md"
+        src.write_text("x")
+        r = _run("date-prefix", str(src), "--date", "2020-01-02", cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        assert (tmp_path / "2020-01-02 Standup 2.md").read_text() == "x"
+        assert (tmp_path / "2020-01-02 Standup.md").read_text() == "existing"
+
+    def test_uses_git_mv_when_tracked(self, tmp_path: Path):
+        _git_init(tmp_path)
+        src = tmp_path / "Standup.md"
+        src.write_text("x")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+        subprocess.run(["git", "commit", "-qm", "init"], cwd=tmp_path, check=True)
+        r = _run("date-prefix", str(src), "--date", "2020-01-02", cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        staged = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=tmp_path, capture_output=True, text=True
+        ).stdout
+        assert "R" in staged
+
+
+class TestLinkRefsCli:
+    def test_prints_target_path_line_and_snippet(self, tmp_path: Path):
+        _vault(tmp_path, {"Demo.md": "x", "Other.md": "intro\nsee [[Demo]] here\n"})
+        r = _run("link-refs", "Demo", "--dir", str(tmp_path), cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        assert r.stdout.strip() == (
+            f"Demo\t{tmp_path / 'Other.md'}:2: see [[Demo]] here"
+        )
+
+    def test_several_targets_at_once(self, tmp_path: Path):
+        _vault(tmp_path, {"A.md": "x", "B.md": "x", "C.md": "[[A]] and [[B]]"})
+        r = _run("link-refs", "A", "B", "--dir", str(tmp_path), cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        assert [line.split("\t")[0] for line in r.stdout.splitlines()] == ["A", "B"]
+
+    def test_no_links_prints_nothing_and_succeeds(self, tmp_path: Path):
+        _vault(tmp_path, {"Demo.md": "x", "Other.md": "no links"})
+        r = _run("link-refs", "Demo", "--dir", str(tmp_path), cwd=tmp_path)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+    def test_requires_a_target(self, tmp_path: Path):
+        r = _run("link-refs", "--dir", str(tmp_path), cwd=tmp_path)
+        assert r.returncode != 0
+        assert "usage" in r.stderr
 
 
 if __name__ == "__main__":
