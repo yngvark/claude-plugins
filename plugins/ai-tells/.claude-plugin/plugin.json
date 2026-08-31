@@ -1,0 +1,10 @@
+{
+  "name": "ai-tells",
+  "version": "0.1.0",
+  "description": "Lint prose for AI writing tells with the vale-ai-tells Vale package, without adding Vale configuration to your project.",
+  "author": {
+    "name": "Yngvar Kristiansen"
+  },
+  "keywords": ["vale", "prose", "linting", "writing", "ai-tells", "documentation"],
+  "license": "MIT"
+}

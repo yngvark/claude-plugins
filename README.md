@@ -65,6 +65,16 @@ Browser automation through the `playwright-cli` binary — navigate pages, fill 
 
 Design notes: [`docs/playwright-cli.md`](docs/playwright-cli.md).
 
+### ai-tells
+
+Lints prose for AI writing tells using [vale-ai-tells](https://github.com/tbhb/vale-ai-tells), a package of 111 [Vale](https://vale.sh) rules covering overused vocabulary, adjective-noun pairs, em dashes, "not just X, it's Y" contrasts, formulaic conclusions and more. The plugin keeps its own Vale config and styles under `~/.cache/vale-ai-tells`, so it works in any repository without adding Vale configuration there. Run `/ai-tells [files]`, or ask whether something sounds like AI. Needs Vale installed (`brew install vale`).
+
+```
+/plugin install ai-tells@yngvark
+```
+
+Design notes: [`docs/ai-tells.md`](docs/ai-tells.md).
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).

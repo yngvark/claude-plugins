@@ -56,6 +56,14 @@
       "author": {
         "name": "Yngvar Kristiansen"
       }
+    },
+    {
+      "name": "ai-tells",
+      "source": "./plugins/ai-tells",
+      "description": "Lint prose for AI writing tells with the vale-ai-tells Vale package, without adding Vale configuration to your project.",
+      "author": {
+        "name": "Yngvar Kristiansen"
+      }
     }
   ]
 }
