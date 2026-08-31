@@ -22,9 +22,10 @@ So the plugin stores the Vale configuration instead of the project.
 default:
 
 ```
-vale.ini            generated once, then left alone
+vale.ini            the generated config, or the user's edit of it
 styles/ai-tells/    downloaded by `vale sync`
 .synced-version     which package release styles/ came from
+.config-hash        what the last generated vale.ini looked like
 ```
 
 `check` and `check-text` both call `vale --config=<that vale.ini>`, so Vale
@@ -34,10 +35,9 @@ download triggers a sync first, and the version stamp is what makes that
 detectable.
 
 `check-text` writes stdin to a temporary `draft.md` before linting it. Vale
-selects rules by file extension and the generated config scopes the style to
-`[*.md]`, so text has to reach Vale as a Markdown file. The temporary path is
-replaced with `draft` in the output, because a path under `/var/folders` tells
-the reader nothing.
+selects a parser by file extension, and Markdown is what loose prose already
+is. The temporary path is replaced with `draft` in the output, because a path
+under `/var/folders` tells the reader nothing.
 
 ## Key decisions
 
@@ -46,12 +46,28 @@ the reader nothing.
   the user's config edits have to outlive that, so they live under
   `$XDG_CACHE_HOME`, with `$AI_TELLS_HOME` as an override that the tests use.
 
-- **The config is generated once and never rewritten.** Only `sync --force`
-  overwrites it. Turning rules off is the plugin's only real tuning mechanism,
-  and that tuning belongs to the user. Every rule in the package is set to
-  `error` level, which means `MinAlertLevel` filters nothing. Quieting a rule
-  requires naming it, and a name the plugin overwrote on every sync would be
-  useless.
+- **The style applies to `[*]`, every extension.** Vale reads source files by
+  extension and pulls the comments and docstrings out of the ones whose
+  language it knows, which is exactly the prose worth linting in a code file.
+  Scoping the style to `[*.md]` instead would leave a Python or Go file with no
+  rules attached, and Vale answers that with silence rather than an error, so
+  the linter would look like it had found nothing. The cost is the other
+  direction: a YAML or Terraform file, which Vale has no parser for, is read as
+  prose end to end, and its keys and string values match rules meant for
+  sentences. Noise a reader can see through beats a clean exit that means
+  nothing. Vale's `[formats]` mapping does not rescue those formats, since only
+  extensions Vale already classifies can be remapped, and the rest come back
+  empty.
+
+- **Only an untouched config is refreshed.** `.config-hash` holds a digest of
+  the last config the plugin generated, so a file matching it is known to be
+  nobody's work and can be rewritten when this script's template changes. A
+  file that does not match belongs to the user. Turning rules off is the
+  plugin's only real tuning mechanism, because every rule in the package is set
+  to `error` level and `MinAlertLevel` filters nothing, so quieting one means
+  naming it. Those names must survive an update. When such a config no longer
+  matches the template, `check` and `status` say so and name `sync --force`,
+  the one command that discards it.
 
 - **StylesPath is written as an absolute path.** Vale resolves a relative
   `StylesPath` against the working directory in some invocations, and these
@@ -89,7 +105,15 @@ so that findings are read as candidates rather than verdicts.
 ## Tests
 
 `test_ai_tells.py` covers what the script owns: cache location resolution, the
-generated config's contents, when a sync is considered necessary, the `--output`
-flag forms, temporary-path relabelling, and the command-line failure messages.
-Nothing in the suite downloads styles or invokes Vale, so it runs offline and on
-a machine with no Vale installed.
+generated config's contents, when a config is refreshed and when it is left
+alone, when a sync is considered necessary, the `--output` flag forms,
+temporary-path relabelling, and the command-line failure messages. These run
+offline and on a machine with no Vale installed.
+
+`TestAgainstVale` is the one group that shells out. Whether a `.py` file is read
+as comments or as prose is Vale's decision rather than this script's, and
+asserting on what the config says cannot show which way Vale went, so those
+tests run the real binary over the styles in the cache. They build a cache of
+their own with a freshly generated config and a symlink to those styles, since
+the developer's own config may have rules switched off in it. They skip when
+Vale or the styles are missing, and they download nothing.

@@ -7,12 +7,18 @@
 
 """Tests for the ai-tells plugin's helper script.
 
-Nothing here downloads the Vale styles or shells out to Vale. The tests cover
-the parts this script owns: where the cache lives, what the generated config
-says, when a sync is needed, argument handling, and the failure messages.
+Most of these cover the parts this script owns: where the cache lives, what the
+generated config says, when a sync is needed, argument handling, and the failure
+messages. Those run offline and on a machine with no Vale.
+
+`TestAgainstVale` is the exception. Whether a Python file is linted as prose or
+as comments is Vale's decision, not this script's, so those tests run the real
+binary against the styles already in the cache. They skip when either is
+missing, and they never download anything.
 """
 
 import os
+import shutil
 import subprocess
 import sys
 from importlib.machinery import SourceFileLoader
@@ -68,8 +74,12 @@ class TestRenderConfig:
         assert "ai-tells-commits" not in config
         assert "ai-tells-experimental" not in config
 
-    def test_scopes_rules_to_markdown(self, tmp_path):
-        assert "[*.md]" in ai_tells.render_config(tmp_path)
+    def test_applies_to_every_extension(self, tmp_path):
+        # A section of `[*.md]` would leave a Python file or a Go file with no
+        # rules at all, and Vale reports nothing rather than saying why.
+        config = ai_tells.render_config(tmp_path)
+        assert "[*]" in config
+        assert "[*.md]" not in config
 
 
 class TestWriteConfig:
@@ -90,12 +100,57 @@ class TestWriteConfig:
         assert ai_tells.write_config(tmp_path) is False
         assert "EmDashUsage = NO" in ai_tells.config_path(tmp_path).read_text()
 
+    def test_leaves_an_up_to_date_config_alone(self, tmp_path):
+        assert ai_tells.write_config(tmp_path) is True
+        assert ai_tells.write_config(tmp_path) is False
+
+    def test_refreshes_an_untouched_config_from_an_older_template(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr(ai_tells, "render_config", lambda home: "old template\n")
+        ai_tells.write_config(tmp_path)
+        monkeypatch.undo()
+
+        assert ai_tells.write_config(tmp_path) is True
+        assert "[*]" in ai_tells.config_path(tmp_path).read_text()
+
     def test_force_overwrites(self, tmp_path):
         ai_tells.write_config(tmp_path)
         ai_tells.config_path(tmp_path).write_text("junk\n", encoding="utf-8")
 
         assert ai_tells.write_config(tmp_path, force=True) is True
         assert "junk" not in ai_tells.config_path(tmp_path).read_text()
+
+
+class TestStaleConfig:
+    def test_a_missing_config_is_not_stale(self, tmp_path):
+        assert ai_tells.config_is_stale(tmp_path) is False
+
+    def test_a_freshly_written_config_is_not_stale(self, tmp_path):
+        ai_tells.write_config(tmp_path)
+        assert ai_tells.config_is_stale(tmp_path) is False
+
+    def test_an_edited_config_from_an_older_template_is_stale(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr(ai_tells, "render_config", lambda home: "old template\n")
+        ai_tells.write_config(tmp_path)
+        monkeypatch.undo()
+        ai_tells.config_path(tmp_path).write_text(
+            "old template\nai-tells.EmDashUsage = NO\n", encoding="utf-8"
+        )
+
+        assert ai_tells.config_is_stale(tmp_path) is True
+        assert ai_tells.write_config(tmp_path) is False
+
+    def test_a_config_without_a_hash_file_is_stale(self, tmp_path):
+        # Configs written before the plugin recorded a hash. They cannot be
+        # told apart from an edited one, so they are reported, not replaced.
+        ai_tells.write_config(tmp_path)
+        ai_tells.config_hash_path(tmp_path).unlink()
+        ai_tells.config_path(tmp_path).write_text("old template\n", encoding="utf-8")
+
+        assert ai_tells.config_is_stale(tmp_path) is True
 
 
 def _fake_styles(home: Path, version: str) -> None:
@@ -233,6 +288,73 @@ class TestCommandLine:
         result = run_cli("check-text", home=tmp_path, stdin="   \n")
         assert result.returncode != 0
         assert "no text on stdin" in result.stderr
+
+    def test_status_points_at_sync_force_for_a_config_it_cannot_replace(
+        self, tmp_path
+    ):
+        ai_tells.write_config(tmp_path)
+        ai_tells.config_hash_path(tmp_path).unlink()
+        ai_tells.config_path(tmp_path).write_text("old\n", encoding="utf-8")
+
+        result = run_cli("status", home=tmp_path)
+        assert "sync --force" in result.stdout
+
+
+TELLS = "This robust solution seamlessly leverages a comprehensive approach.\n"
+
+# Read at import time, before `clean_env` strips the environment for the rest
+# of the suite. These tests want the developer's real cache, styles and all.
+VALE_HOME = ai_tells.home_dir()
+
+needs_vale = pytest.mark.skipif(
+    not shutil.which("vale") or ai_tells.needs_sync(VALE_HOME),
+    reason="needs Vale and an already-downloaded copy of the styles",
+)
+
+
+@needs_vale
+class TestAgainstVale:
+    """The parts only Vale can answer. Skipped unless it is set up locally."""
+
+    @pytest.fixture
+    def borrowed_cache(self, tmp_path):
+        """A cache with a config of its own, borrowing the styles on disk.
+
+        The config has to be a freshly generated one. The developer's own may
+        have rules switched off in it, and a run against those would prove
+        nothing about the template these tests are checking.
+        """
+        home = tmp_path / "cache"
+        home.mkdir()
+        ai_tells.styles_path(home).symlink_to(ai_tells.styles_path(VALE_HOME))
+        ai_tells.stamp_path(home).write_text(
+            ai_tells.PACKAGE_VERSION + "\n", encoding="utf-8"
+        )
+        return home
+
+    def _check(self, home: Path, name: str, text: str, tmp_path: Path) -> str:
+        source = tmp_path / name
+        source.write_text(text, encoding="utf-8")
+        return run_cli("check", str(source), home=home).stdout
+
+    def test_finds_tells_in_a_python_comment(self, borrowed_cache, tmp_path):
+        found = self._check(
+            borrowed_cache, "sample.py", f"# {TELLS}value = 1\n", tmp_path
+        )
+        assert "OverusedVocabulary" in found
+
+    def test_leaves_python_code_alone(self, borrowed_cache, tmp_path):
+        found = self._check(
+            borrowed_cache,
+            "sample.py",
+            'robust = "seamlessly comprehensive"\n',
+            tmp_path,
+        )
+        assert found == ""
+
+    def test_finds_tells_in_markdown(self, borrowed_cache, tmp_path):
+        found = self._check(borrowed_cache, "sample.md", TELLS, tmp_path)
+        assert "OverusedVocabulary" in found
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 ---
 name: ai-tells
-description: Lint prose for AI writing tells with the vale-ai-tells Vale package. It flags overused vocabulary ("leverage", "seamless", "robust"), adjective-noun pairs ("comprehensive approach"), em dashes, "not just X, it's Y" contrasts, formulaic conclusions, sycophancy, and anthropomorphized tools. Use when the user runs /ai-tells, when they ask to check text for AI tells or AI slop, when they wonder whether something sounds like AI, or after drafting a README, design doc, PR description, or other prose a human will read. Works on files or on draft text, and does not need Vale set up in the project.
+description: Lint prose for AI writing tells with the vale-ai-tells Vale package. It flags overused vocabulary ("leverage", "seamless", "robust"), adjective-noun pairs ("comprehensive approach"), em dashes, "not just X, it's Y" contrasts, formulaic conclusions, sycophancy, and anthropomorphized tools. Use when the user runs /ai-tells, when they ask to check text for AI tells or AI slop, when they wonder whether something sounds like AI, or after drafting a README, design doc, PR description, source comments, or other prose a human will read. Works on any file type, including comments and docstrings in source code, and on draft text that is not in a file yet. Does not need Vale set up in the project.
 allowed-tools: Bash
 ---
 
@@ -17,7 +17,7 @@ styles live in a cache directory of their own.
 Lint files:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/ai_tells.py check README.md docs/design.md
+${CLAUDE_PLUGIN_ROOT}/scripts/ai_tells.py check README.md docs/design.md app.py
 ```
 
 Lint text that is not in a file yet, such as a PR description, a commit message
@@ -71,6 +71,11 @@ When the user asks for fixes rather than a report:
 3. Run it again to confirm, and tell the user which findings you left alone and
    why.
 
+A config that has been switched off in places, or one written by an older
+version of this plugin, is left alone rather than replaced, and `check` says so
+on stderr when it finds one. Pass that message on; regenerating is the user's
+call, since it discards the rule lines they added.
+
 If a rule keeps matching on a project where it does not apply, the fix is a line
 in the config, not repeated hand-editing:
 
@@ -78,13 +83,28 @@ in the config, not repeated hand-editing:
 ${CLAUDE_PLUGIN_ROOT}/scripts/ai_tells.py config-path
 ```
 
-Show the user that path and the rule name, and let them decide. The config is
-generated once and never overwritten afterwards, so their edits survive.
+Show the user that path and the rule name, and let them decide. Their edits
+survive. Once the config differs from what the plugin generates, `sync --force`
+is the only command that rewrites it.
+
+## What gets linted
+
+Any file, not only Markdown. Vale chooses a parser from the extension, so a
+source file in a language it recognises has its comments and docstrings linted
+while the code around them is left alone. That covers Python, Go, Ruby, Rust,
+Java, JavaScript, TypeScript, C, C#, PHP, Lua, R, Swift, Scala, Haskell and
+Perl, alongside the markup formats.
+
+An extension Vale has no parser for is read as plain prose from the first line
+to the last. For YAML, Terraform, shell or JSON that means every key, flag and
+string value is checked as if it were a sentence, which produces a lot of
+findings that are not about anyone's writing. Read those with the file type in
+mind, and report only what falls inside a real comment.
 
 ## Scope
 
-- Prose only: READMEs, design docs, PR and issue bodies, comments, chat replies.
-  Not code, not structured data.
+- Prose, wherever it lives: READMEs, design docs, PR and issue bodies, source
+  comments and docstrings, chat replies. Not the code itself.
 - The `ai-tells-commits` style (commit message rules) and
   `ai-tells-experimental` (structural rules the upstream author marks as noisy)
   are not installed.
