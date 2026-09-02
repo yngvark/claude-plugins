@@ -222,6 +222,35 @@ class TestPathAllowed:
     def test_reject_search_extra_segment(self):
         assert not is_path_allowed("search/issues/123")
 
+    # -- notifications paths --
+
+    def test_notifications(self):
+        assert is_path_allowed("notifications")
+
+    def test_notifications_with_leading_slash(self):
+        assert is_path_allowed("/notifications")
+
+    def test_notifications_with_query(self):
+        assert is_path_allowed("notifications?all=true&per_page=10")
+
+    def test_notifications_thread(self):
+        assert is_path_allowed("notifications/threads/123456")
+
+    def test_notifications_thread_subscription(self):
+        assert is_path_allowed("notifications/threads/123456/subscription")
+
+    def test_repo_notifications(self):
+        assert is_path_allowed("repos/owner/repo/notifications")
+
+    def test_reject_notifications_threads_bare(self):
+        assert not is_path_allowed("notifications/threads")
+
+    def test_reject_notifications_threads_empty_id(self):
+        assert not is_path_allowed("notifications/threads//subscription")
+
+    def test_reject_notifications_unknown_sub(self):
+        assert not is_path_allowed("notifications/foo")
+
 
 # ---------------------------------------------------------------------------
 # is_safe_flag
@@ -472,6 +501,19 @@ class TestEndToEnd:
 
     def test_reject_search_unknown_type_e2e(self):
         r = run(["search/teams"])
+        assert r.returncode == 1
+        assert "REJECTED" in r.stderr
+
+    def test_accept_notifications(self):
+        r = run(["notifications?per_page=1"])
+        assert "REJECTED" not in r.stderr
+
+    def test_accept_notifications_thread(self):
+        r = run(["notifications/threads/123456"])
+        assert "REJECTED" not in r.stderr
+
+    def test_reject_notifications_unknown_sub_e2e(self):
+        r = run(["notifications/foo"])
         assert r.returncode == 1
         assert "REJECTED" in r.stderr
 

@@ -20,6 +20,7 @@ ALLOWED_RESOURCES = {
     "releases",
     "comments",
     "branches",
+    "notifications",
 }
 
 # Allowed fourth-level resources under repos/{owner}/{repo}/{group}/{sub}
@@ -53,6 +54,11 @@ def is_path_allowed(path: str) -> bool:
     parts = path.strip("/").split("/")
     if not parts or not parts[0]:
         return False
+    # notifications  |  notifications/threads/{id}[/...]
+    if parts[0] == "notifications":
+        return len(parts) == 1 or (
+            len(parts) >= 3 and parts[1] == "threads" and bool(parts[2])
+        )
     # search/{type}
     if parts[0] == "search":
         return len(parts) == 2 and parts[1] in ALLOWED_SEARCH_TYPES
@@ -99,12 +105,14 @@ USAGE = """Usage: gh-read.py <api-path> [flags...]
 Read-only GitHub API proxy. Forces GET and rejects paths/flags outside the allowlists.
 
 Allowed path patterns:
-  repos/{owner}/{repo}/{issues,pulls,commits,contents,compare,releases,comments,branches}[/...]
+  repos/{owner}/{repo}/{issues,pulls,commits,contents,compare,releases,comments,branches,notifications}[/...]
   repos/{owner}/{repo}/git/refs[/...]
   repos/{owner}/{repo}/actions/{runs,workflows}[/...]
   repos/{owner}/{repo}/properties/values
   orgs/{org}/properties/{schema,values}[/...]
   search/{issues,repositories,code,commits,users,labels,topics}
+  notifications
+  notifications/threads/{id}[/...]
 
 Allowed flags:
   --paginate, -p              paginate results
@@ -119,6 +127,8 @@ Examples:
   gh-read.py repos/cli/cli/pulls/42
   gh-read.py repos/cli/cli/issues?state=open --jq '.[].title'
   gh-read.py search/issues?q=repo:cli/cli+is:open+freeze
+  gh-read.py notifications?all=true
+  gh-read.py notifications/threads/123456
 """
 
 
@@ -171,9 +181,10 @@ def main() -> None:
     if not is_path_allowed(api_path):
         print(f"REJECTED: path '{api_path}' is not in the read-safe allowlist.", file=sys.stderr)
         print("Allowed patterns:", file=sys.stderr)
-        print("  repos/{owner}/{repo}/{issues,pulls,commits,git/refs,actions/runs,actions/workflows,contents,compare,releases,comments,branches,properties/values}", file=sys.stderr)
+        print("  repos/{owner}/{repo}/{issues,pulls,commits,git/refs,actions/runs,actions/workflows,contents,compare,releases,comments,branches,notifications,properties/values}", file=sys.stderr)
         print("  orgs/{org}/properties/{schema,values}", file=sys.stderr)
         print("  search/{issues,repositories,code,commits,users,labels,topics}", file=sys.stderr)
+        print("  notifications, notifications/threads/{id}", file=sys.stderr)
         sys.exit(1)
 
     cmd = ["gh", "api", "--method", "GET", api_path] + filtered_args
