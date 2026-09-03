@@ -1,13 +1,17 @@
 ---
 name: note
-description: Jot a quick thought, idea, or reminder into the user's Markdown/Obsidian notes folder as a new file. Use when the user says "/note", "note this down", "add a note", "write this to my notes/second brain", or asks Claude to capture a thought for later.
+description: Save a note into the user's Markdown/Obsidian notes folder as a new file. Covers quick thoughts as well as longer write-ups such as summaries, reading lists, or triage notes. Use whenever the user says "/note", "note this down", "note down all of this", "add a note", "write this to my notes/second brain", "save this for later", or otherwise asks Claude to write something down for them. Never write a note to any other location.
 ---
 
 # note — capture a thought to the notes folder
 
-Use this skill to save a quick thought, idea, snippet, or reminder as a **new
-Markdown file** in the user's notes folder (their "second brain"). One note =
-one file.
+Use this skill to save a thought, idea, snippet, reminder, or longer write-up
+(a summary, a reading list, a triage note) as a **new Markdown file** in the
+user's notes folder (their "second brain"). One note = one file.
+
+All notes go to the folder that `resolve-dir` prints: `$OBSIDIAN_NOTES_DIR`
+when set, otherwise the current working directory. Never write a note to a
+scratch directory, `~/Documents`, or any other path you pick yourself.
 
 The note content is whatever the user gives you. If they invoked `/note` with
 text after it, that text is the note. If they invoked it bare, ask what they
@@ -32,8 +36,10 @@ is cheap; a junk note the user has to hunt down and delete is not.
    ${CLAUDE_PLUGIN_ROOT}/scripts/notes.py resolve-dir
    ```
 
-   If this errors (the env var is unset or the path is missing), relay the
-   error to the user and stop — they need to set `$OBSIDIAN_NOTES_DIR`.
+   This prints `$OBSIDIAN_NOTES_DIR`, or the current working directory when
+   that variable is unset. If it errors (the variable points at a missing
+   path), relay the error to the user and stop. Do not write the note
+   somewhere else instead.
 
 2. **Decide the note body and a short title.**
 

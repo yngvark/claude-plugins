@@ -13,7 +13,7 @@ directory, sanitizing titles into safe filenames, locating notes by name or
 content, finding untitled daily notes, and renaming files.
 
 Subcommands:
-    resolve-dir                     Print the notes dir ($OBSIDIAN_NOTES_DIR).
+    resolve-dir                     Print the notes dir ($OBSIDIAN_NOTES_DIR, else cwd).
     note-path "<title>"             Print a unique, safe path for a new note.
     find "<query>" [--limit N] [dir]    Find notes whose file name matches.
     search "<text>" [--limit N] [dir]   Find notes whose contents match.
@@ -69,11 +69,8 @@ def resolve_dir() -> Path:
             if not p.is_dir():
                 sys.exit(f"error: {var}={val!r} is not an existing directory")
             return p
-    sys.exit(
-        "error: notes directory not set. Point $OBSIDIAN_NOTES_DIR at your "
-        "notes/Obsidian folder, e.g.\n"
-        "    export OBSIDIAN_NOTES_DIR=\"$HOME/path/to/vault\""
-    )
+    # No notes folder configured: use the current directory.
+    return Path.cwd()
 
 
 def unique_path(directory: Path, stem: str, ext: str = ".md") -> Path:

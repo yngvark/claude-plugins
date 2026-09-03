@@ -35,8 +35,9 @@ know where to read and write:
 export OBSIDIAN_NOTES_DIR="$HOME/path/to/vault"
 ```
 
-`NOTES_DIR` is accepted as a fallback if `OBSIDIAN_NOTES_DIR` is unset. Nothing
-about your folder path is stored in this repo.
+`NOTES_DIR` is accepted as a fallback if `OBSIDIAN_NOTES_DIR` is unset. If
+neither is set, the skills use the current working directory. Nothing about
+your folder path is stored in this repo.
 
 ## Prerequisites
 

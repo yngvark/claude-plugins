@@ -21,8 +21,9 @@ sentence "See Foo.md" as a new note.
    ${CLAUDE_PLUGIN_ROOT}/scripts/notes.py resolve-dir
    ```
 
-   If this errors (the env var is unset or the path is missing), relay the
-   error to the user and stop — they need to set `$OBSIDIAN_NOTES_DIR`.
+   This prints `$OBSIDIAN_NOTES_DIR`, or the current working directory when
+   that variable is unset. If it errors (the variable points at a missing
+   path), relay the error to the user and stop.
 
 2. **Locate the note.** Pick the search that matches what the user gave you:
 

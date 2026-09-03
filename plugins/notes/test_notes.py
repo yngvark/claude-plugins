@@ -347,10 +347,10 @@ def _run(*args: str, cwd: Path, env: dict | None = None):
 
 
 class TestResolveDirCli:
-    def test_errors_when_unset(self, tmp_path: Path):
+    def test_falls_back_to_cwd_when_unset(self, tmp_path: Path):
         r = _run("resolve-dir", cwd=tmp_path, env={"PATH": ""})
-        assert r.returncode != 0
-        assert "not set" in r.stderr
+        assert r.returncode == 0
+        assert Path(r.stdout.strip()).resolve() == tmp_path.resolve()
 
     def test_errors_when_missing_dir(self, tmp_path: Path):
         env = {"OBSIDIAN_NOTES_DIR": str(tmp_path / "nope")}
