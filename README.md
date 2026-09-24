@@ -75,6 +75,16 @@ Lints prose for AI writing tells using [vale-ai-tells](https://github.com/tbhb/v
 
 Design notes: [`docs/ai-tells.md`](docs/ai-tells.md).
 
+### my-skills
+
+Unrelated skills I find useful, kept in one plugin so adding a skill needs no new install. `/notification-summary` turns your GitHub notifications (filtered by a `github.com/notifications` query) into an HTML page of the issues and PRs that need you or are worth reading.
+
+```
+/plugin install my-skills@yngvark
+```
+
+Design notes: [`docs/my-skills.md`](docs/my-skills.md).
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).

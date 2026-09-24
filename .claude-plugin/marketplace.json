@@ -64,6 +64,14 @@
       "author": {
         "name": "Yngvar Kristiansen"
       }
+    },
+    {
+      "name": "my-skills",
+      "source": "./plugins/my-skills",
+      "description": "A grab bag of unrelated skills I find useful, kept in one plugin so a new skill needs no new install. Includes /notification-summary, which turns GitHub notifications into an HTML summary of the issues and PRs that matter.",
+      "author": {
+        "name": "Yngvar Kristiansen"
+      }
     }
   ]
 }
