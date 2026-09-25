@@ -1,6 +1,7 @@
 ---
 name: note
 description: Save a note into the user's Markdown/Obsidian notes folder as a new file. Covers quick thoughts as well as longer write-ups such as summaries, reading lists, or triage notes. Use whenever the user says "/note", "note this down", "note down all of this", "add a note", "write this to my notes/second brain", "save this for later", or otherwise asks Claude to write something down for them. Never write a note to any other location.
+argument-hint: "[the thought to capture]"
 ---
 
 # note — capture a thought to the notes folder

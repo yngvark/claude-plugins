@@ -1,6 +1,7 @@
 ---
 name: read-note
 description: Find and read existing notes in the user's Markdown/Obsidian notes folder. Use when the user refers to a note that already exists — "/read-note", "see <something>.md", "read my note about X", "what did I write about Y", "look up my notes on Z", "continue what's in that handoff note" — or when they want to pick up work described in an earlier note. Do NOT create a new note here; that is the `note` skill.
+argument-hint: "[note name, or a topic to look up]"
 ---
 
 # read-note — find and read an existing note

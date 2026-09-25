@@ -1,6 +1,7 @@
 ---
 name: add-date-prefix
 description: Put a yyyy-mm-dd date in front of notes that don't have one, so a folder sorts chronologically. Renames "Standup.md" to "2026-07-01 Standup.md" using the file's creation date. Use when the user says "/add-date-prefix", "add dates to my notes", "these files are missing a date", or "date the undated notes in folder X".
+argument-hint: "[optional folder, e.g. ki]"
 ---
 
 # add-date-prefix — date the notes that lack a date

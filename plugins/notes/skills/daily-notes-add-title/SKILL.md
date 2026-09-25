@@ -1,6 +1,7 @@
 ---
 name: daily-notes-add-title
 description: Give bare daily notes a descriptive title. Renames files named yyyy-mm-dd.md to "yyyy-mm-dd <title>.md" where the title summarizes the note's contents. Use when the user says "/daily-notes-add-title", "add titles to my daily notes", or "title my untitled daily notes".
+argument-hint: "[optional path to a specific daily note]"
 ---
 
 # daily-notes-add-title — title untitled daily notes

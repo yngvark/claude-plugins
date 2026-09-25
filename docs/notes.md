@@ -106,10 +106,6 @@ one of the two needs Claude's judgement per file.
 ```
 plugins/notes/
   .claude-plugin/plugin.json
-  commands/note.md                        # thin /note entry point -> skill
-  commands/read-note.md                   # thin entry point -> skill
-  commands/daily-notes-add-title.md       # thin entry point -> skill
-  commands/add-date-prefix.md             # thin entry point -> skill
   scripts/notes.py                        # shared, tested filesystem helper
   skills/note/SKILL.md
   skills/read-note/SKILL.md
@@ -119,10 +115,6 @@ plugins/notes/
   Makefile                                # `make test`
   README.md
 ```
-
-The commands mirror the pattern used by the other plugins in this marketplace
-(`public-ready`, `session-review`): a thin slash-command that invokes a skill
-of the same name.
 
 ## Testing
 

@@ -1,6 +1,7 @@
 ---
 name: ai-tells
 description: Lint prose for AI writing tells with the vale-ai-tells Vale package. It flags overused vocabulary ("leverage", "seamless", "robust"), adjective-noun pairs ("comprehensive approach"), em dashes, "not just X, it's Y" contrasts, formulaic conclusions, sycophancy, and anthropomorphized tools. Use when the user runs /ai-tells, when they ask to check text for AI tells or AI slop, when they wonder whether something sounds like AI, or after drafting a README, design doc, PR description, source comments, or other prose a human will read. Works on any file type, including comments and docstrings in source code, and on draft text that is not in a file yet. Does not need Vale set up in the project.
+argument-hint: "[file paths, or nothing to check what was just written]"
 allowed-tools: Bash
 ---
 
@@ -13,6 +14,10 @@ configuration to the project being worked in. The config and the downloaded
 styles live in a cache directory of their own.
 
 ## Running it
+
+Lint the files the user names. If they name none, lint the prose files changed
+in the working tree (`git status --short`), and ask which text they mean when
+there are none. Report findings without editing unless the user asks for fixes.
 
 Lint files:
 
