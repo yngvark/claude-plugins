@@ -14,7 +14,8 @@ content, finding untitled daily notes, and renaming files.
 
 Subcommands:
     resolve-dir                     Print the notes dir ($OBSIDIAN_NOTES_DIR, else cwd).
-    note-path "<title>"             Print a unique, safe path for a new note.
+    note-path "<title>" [--date D]  Print a unique, safe path for a new note,
+                                    named "yyyy-mm-dd <title>.md" (today by default).
     find "<query>" [--limit N] [dir]    Find notes whose file name matches.
     search "<text>" [--limit N] [dir]   Find notes whose contents match.
     recent [--limit N] [dir]        List the most recently modified notes.
@@ -293,11 +294,17 @@ def cmd_resolve_dir(_argv: list[str]) -> None:
 
 
 def cmd_note_path(argv: list[str]) -> None:
-    if not argv:
-        sys.exit('usage: notes.py note-path "<title>"')
+    given, argv = take_repeated(argv, "--date")
+    if len(argv) != 1:
+        sys.exit('usage: notes.py note-path "<title>" [--date yyyy-mm-dd]')
     stem = sanitize_title(argv[0])
     if not stem:
         sys.exit("error: title is empty after sanitizing")
+    date = given[-1] if given else datetime.date.today().isoformat()
+    if not ISO_DATE_RE.match(date):
+        sys.exit(f"error: --date must be yyyy-mm-dd, got {date!r}")
+    if not has_date_prefix(stem):
+        stem = f"{date} {stem}"
     print(unique_path(resolve_dir(), stem))
 
 

@@ -40,6 +40,8 @@ one of the two needs Claude's judgement per file.
 - **Title format `yyyy-mm-dd <Title>.md`** with a normal space after the date
   and human-readable spacing in the title (e.g. `2026-07-01 Meeting with
   team.md`). The date prefix is always preserved; only a title is appended.
+  `/note` follows the same format: `note-path` prefixes today's date, so new
+  notes never need `/add-date-prefix`.
 - **Capture and recall are separate skills.** `/note` only writes; `/read-note`
   only reads. Bundling them invited a specific failure: given `See Foo.md — I
   want to continue that`, a write-only `/note` skill dutifully saved a new note
@@ -125,7 +127,7 @@ of the same name.
 ## Testing
 
 `make test` runs `test_notes.py` via `uv run --script`. It covers title
-sanitizing, unique-path collision handling, the daily-note and date-prefix
+sanitizing, unique-path collision handling, the date prefix on new notes, the daily-note and date-prefix
 regexes, lookup behaviour (name-match ranking, `.md`-suffix and case tolerance,
 words in any order, subfolders, hidden-folder exclusion, content hits with one
 line per note, recency ordering, limits), date resolution (each `--date-source`,

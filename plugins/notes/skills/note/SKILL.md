@@ -55,9 +55,11 @@ is cheap; a junk note the user has to hunt down and delete is not.
    ${CLAUDE_PLUGIN_ROOT}/scripts/notes.py note-path "Idea for caching layer"
    ```
 
-   This prints an absolute path inside the notes folder, sanitized and
-   de-duplicated (e.g. `.../Idea for caching layer.md`, or `... 2.md` if that
-   name is taken). Use the path it prints verbatim.
+   This prints an absolute path inside the notes folder, prefixed with
+   today's ISO date, sanitized and de-duplicated (e.g.
+   `.../2026-07-01 Idea for caching layer.md`, or `... 2.md` if that name is
+   taken). Pass the title without a date; the script adds it. Use the path it
+   prints verbatim.
 
 4. **Write the file** at that path with the Write tool, using the body from
    step 2.

@@ -424,11 +424,37 @@ class TestDailyRenameCli:
 
 
 class TestNotePathCli:
-    def test_prints_unique_path(self, tmp_path: Path):
+    def test_prefixes_todays_date(self, tmp_path: Path):
         env = {"OBSIDIAN_NOTES_DIR": str(tmp_path)}
         r = _run("note-path", "My idea", cwd=tmp_path, env=env)
         assert r.returncode == 0, r.stderr
-        assert r.stdout.strip() == str(tmp_path / "My idea.md")
+        today = datetime.date.today().isoformat()
+        assert r.stdout.strip() == str(tmp_path / f"{today} My idea.md")
+
+    def test_uses_given_date(self, tmp_path: Path):
+        env = {"OBSIDIAN_NOTES_DIR": str(tmp_path)}
+        r = _run("note-path", "My idea", "--date", "2026-01-02", cwd=tmp_path, env=env)
+        assert r.returncode == 0, r.stderr
+        assert r.stdout.strip() == str(tmp_path / "2026-01-02 My idea.md")
+
+    def test_keeps_existing_date_prefix(self, tmp_path: Path):
+        env = {"OBSIDIAN_NOTES_DIR": str(tmp_path)}
+        r = _run("note-path", "2025-05-05 Old", "--date", "2026-01-02", cwd=tmp_path, env=env)
+        assert r.returncode == 0, r.stderr
+        assert r.stdout.strip() == str(tmp_path / "2025-05-05 Old.md")
+
+    def test_dedupes_dated_name(self, tmp_path: Path):
+        (tmp_path / "2026-01-02 My idea.md").write_text("x")
+        env = {"OBSIDIAN_NOTES_DIR": str(tmp_path)}
+        r = _run("note-path", "My idea", "--date", "2026-01-02", cwd=tmp_path, env=env)
+        assert r.returncode == 0, r.stderr
+        assert r.stdout.strip() == str(tmp_path / "2026-01-02 My idea 2.md")
+
+    def test_rejects_bad_date(self, tmp_path: Path):
+        env = {"OBSIDIAN_NOTES_DIR": str(tmp_path)}
+        r = _run("note-path", "My idea", "--date", "02.01.2026", cwd=tmp_path, env=env)
+        assert r.returncode != 0
+        assert "yyyy-mm-dd" in r.stderr
 
     def test_errors_on_empty_title(self, tmp_path: Path):
         env = {"OBSIDIAN_NOTES_DIR": str(tmp_path)}
