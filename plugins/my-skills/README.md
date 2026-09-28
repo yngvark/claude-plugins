@@ -15,6 +15,8 @@ Skills I find useful that don't necessarily belong together. They share one plug
 
 Summarizes the most important GitHub issues and PRs in your notifications into an HTML page in a temp dir. Threads are sorted into "Needs you", "Worth reading" and a collapsed list of the rest, each with a short summary of where it stands.
 
+![Example summary page, with fictional repositories and people](example/screenshot.png)
+
 Pass a `github.com/notifications?query=...` URL or its query, or set a default:
 
 ```sh

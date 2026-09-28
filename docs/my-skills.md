@@ -35,3 +35,5 @@ The script calls `gh api --method GET` directly instead of going through the `gh
 ### Page design
 
 The page has a white background with soft, shadowed cards in light mode and near-black with bordered cards in dark mode. The accents are Mediterranean colors: sea blue, terracotta, lemon, green and purple. Priority 1 items are tinted terracotta, and priority 2 items are tinted amber. The page follows the OS theme, and `?theme=light|dark` overrides it. The CSS lives in `summary.css` next to the script.
+
+The README shows `example/screenshot.png`. `example/render-example.py` renders the page it is taken from, using fictional repositories and people, because this repo is public and real notifications name colleagues and internal repos. Rerun it and screenshot the HTML at 900px width in light mode after changing the page design.
