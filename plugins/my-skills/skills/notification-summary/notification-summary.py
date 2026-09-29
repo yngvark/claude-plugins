@@ -321,7 +321,7 @@ def render(data: dict, summary: dict, css: str) -> str:
     for items in placed.values():
         items.sort(key=lambda ts: ts[1].get("priority") or 9)
     used = {t["id"] for items in placed.values() for t, _ in items}
-    other = [t for t in data["threads"] if t["id"] not in used]
+    other = sorted((t for t in data["threads"] if t["id"] not in used), key=lambda t: t["updated_at"], reverse=True)
 
     counts = [len(placed["needs_you"]), len(placed["worth_reading"]), len(other)]
     stats = "".join(
@@ -337,11 +337,13 @@ def render(data: dict, summary: dict, css: str) -> str:
         rows = "".join(
             f'<tr><td><span class="kind {kind(t)[0]}">{kind(t)[1]}</span></td>'
             f'<td><a href="{e(t["url"])}">{e(t["title"])}</a></td>'
-            f'<td class="repo">{e(t["repo"])} #{t["number"]}</td><td class="repo">{e(t["author"])}</td></tr>'
+            f'<td class="repo">{e(t["repo"])} #{t["number"]}</td><td class="repo">{e(t["author"])}</td>'
+            f'<td class="repo">{ago(t["updated_at"], now)}</td></tr>'
             for t in other
         )
+        head = "<thead><tr><th></th><th>Title</th><th>Repo</th><th>Author</th><th>Updated ↓</th></tr></thead>"
         body.append(f'<details class="other"><summary>{len(other)} other notifications</summary>'
-                    f'<div class="wrap"><table>{rows}</table></div></details>')
+                    f'<div class="wrap"><table>{head}<tbody>{rows}</tbody></table></div></details>')
     if not data["threads"]:
         body.append("<p>No notifications match this query.</p>")
 

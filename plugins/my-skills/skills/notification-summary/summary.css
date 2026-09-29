@@ -49,6 +49,7 @@ summary { cursor: pointer; color: var(--muted); }
 .wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 td { padding: 7px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+th { padding: 7px 6px; text-align: left; font-weight: 600; color: var(--muted); white-space: nowrap; }
 
 /* Light mode */
 [data-theme=light] .stat, [data-theme=light] .item, [data-theme=light] details.other { background: var(--card); border-radius: 14px; box-shadow: 0 2px 8px rgb(0 0 0 / .06); }

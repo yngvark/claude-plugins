@@ -12,7 +12,7 @@ The user follows several teams' repositories through GitHub notifications. The n
 
 1. `fetch` gets notifications, applies the query's filters, and enriches each issue or PR thread with author, state, CI result, review decision, body and the comments since the user last read the thread. It writes `notifications.json` to a new temp dir.
 2. Claude reads that file and writes `summary.json`. It lists only the threads worth showing, each with a section, priority, lead-in reason and one- or two-sentence summary.
-3. `render` merges the two files into HTML. Facts such as title, link, author, age, CI and diff size come from `notifications.json`, so Claude cannot misstate them. Threads that Claude left out go into a collapsed "Other" table, so nothing disappears silently.
+3. `render` merges the two files into HTML. Facts such as title, link, author, age, CI and diff size come from `notifications.json`, so Claude cannot misstate them. Threads that Claude left out go into a collapsed "Other" table, newest activity first with an "Updated" column, so nothing disappears silently.
 
 Keeping rendering in the script means the page looks the same every run and that tests cover it. Claude writes judgements only, which keeps its output small.
 

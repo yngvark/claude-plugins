@@ -180,6 +180,13 @@ class TestRender:
         assert "1 other notifications" in self.html
         assert self.html.index("other notifications") < self.html.index("&lt;script&gt;")
 
+    def test_other_table_sorted_by_updated_with_date_column(self):
+        data = {**DATA, "threads": DATA["threads"] + [thread(4, updated_at="2026-09-23T08:00:00Z")]}
+        h = ns.render(data, SUMMARY, "")
+        assert "<th>Updated ↓</th>" in h
+        assert h.index("Title 4") < h.index("&lt;script&gt;")
+        assert "<td class=\"repo\">today</td>" in h and "<td class=\"repo\">yesterday</td>" in h
+
     def test_escapes_and_renders_code(self):
         assert "<script>alert" not in self.html
         assert "<code>ok pkg</code>" in self.html
