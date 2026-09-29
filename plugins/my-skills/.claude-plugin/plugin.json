@@ -1,6 +1,6 @@
 {
   "name": "my-skills",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A grab bag of unrelated skills I find useful, kept in one plugin so a new skill needs no new install.",
   "author": {
     "name": "Yngvar Kristiansen"

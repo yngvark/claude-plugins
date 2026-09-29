@@ -221,7 +221,7 @@ class TestDone:
         h = TestRender.html
         for i in ("1", "2", "3"):
             assert h.count(f'class="done" data-id="{i}"') == 1
-        assert 'id="donebar" hidden' in h and "notification-summary.py" in h
+        assert 'id="donebar" hidden' in h and "gh api --method DELETE notifications/threads/" in h
 
     def test_marks_each_thread_done(self, capsys):
         calls = []

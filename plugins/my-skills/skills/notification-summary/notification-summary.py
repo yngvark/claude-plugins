@@ -19,7 +19,8 @@ does the deterministic parts:
     render NOTIFICATIONS_JSON SUMMARY_JSON [--out FILE]
         Merge Claude's summary (sections, priorities, one-line reasons and
         summaries) with the fetched facts and write an HTML page. Prints the
-        path. The page builds a `done` command from the threads the user ticks.
+        path. The page builds a `gh` command that marks the ticked threads
+        as done.
 
     done ID [ID ...]
         Mark notification threads as done, so the next fetch leaves them out.
@@ -33,7 +34,6 @@ import datetime as dt
 import html
 import json
 import re
-import shlex
 import subprocess
 import sys
 import tempfile
@@ -318,14 +318,15 @@ def done_box(t: dict) -> str:
     return f'<input type="checkbox" class="done" data-id="{e(t["id"])}" title="Mark as done" aria-label="Mark as done">'
 
 
-# Shows the `done` command for the ticked threads in the bottom panel.
+# Shows a gh command that marks the ticked threads as done, in the bottom panel.
 DONE_SCRIPT = """
 const boxes = [...document.querySelectorAll('input.done')];
 const bar = document.getElementById('donebar'), cmd = document.getElementById('donecmd');
+const del = id => 'gh api --method DELETE notifications/threads/' + id;
 function update() {
-  const ids = [...new Set(boxes.filter(b => b.checked).map(b => b.dataset.id))];
+  const ids = [...new Set(boxes.filter(b => b.checked).map(b => b.dataset.id))].filter(id => /^\\d+$/.test(id));
   bar.hidden = !ids.length;
-  cmd.value = bar.dataset.script + ' done ' + ids.join(' ');
+  cmd.value = ids.length === 1 ? del(ids[0]) : `for id in ${ids.join(' ')}; do ${del('$id')}; done`;
   document.getElementById('donecount').textContent = ids.length;
 }
 boxes.forEach(b => b.addEventListener('change', update));
@@ -386,7 +387,7 @@ def render(data: dict, summary: dict, css: str) -> str:
 
     if data["threads"]:
         body.append(
-            f'<div id="donebar" hidden data-script="{e(shlex.quote(str(Path(__file__).resolve())))}">'
+            '<div id="donebar" hidden>'
             '<span><b id="donecount">0</b> to mark as done. Run in a terminal:</span>'
             '<input id="donecmd" readonly aria-label="Command"><button id="donecopy" type="button">Copy</button></div>'
             f"<script>{DONE_SCRIPT}</script>"

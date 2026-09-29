@@ -61,10 +61,10 @@ Give the user the printed HTML path as an `open <path>` command. The page follow
 
 ## 5. Mark as done
 
-Each thread on the page has a checkbox. Ticking threads shows a command at the bottom of the page that the user runs in a terminal:
+Each thread on the page has a checkbox. Ticking threads shows a `gh` command at the bottom of the page that the user runs in a terminal. It marks the notifications as done on GitHub, so the next fetch leaves them out until they get new activity.
+
+If the user names threads in chat instead ("mark the Renovate PRs as done"), look up their IDs in `notifications.json` and run:
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py done <thread id> [<thread id> ...]
 ```
-
-It marks the notifications as done on GitHub, so the next fetch leaves them out until they get new activity. If the user names threads in chat instead ("mark the Renovate PRs as done"), look up their IDs in `notifications.json` and run the command yourself.

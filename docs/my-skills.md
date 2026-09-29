@@ -36,7 +36,9 @@ The script calls `gh api` directly instead of going through the `gh-read` plugin
 
 `done ID...` sends `DELETE /notifications/threads/{id}`, which is GitHub's "mark as done". GitHub then leaves the thread out of the notifications list until it gets new activity, so the next run of the skill does not show it again. The script keeps no state of its own for this.
 
-Each thread on the page has a checkbox. The page shows the `done` command for the ticked threads, with the script's absolute path, and the user copies it into a terminal. The page cannot call GitHub itself, because a local HTML file has no access to the user's token, and putting a token in the browser would expose it. `done` accepts only numeric IDs, so a mangled paste cannot reach another API path.
+Each thread on the page has a checkbox. The page shows a command for the ticked threads, such as `for id in 1 2; do gh api --method DELETE notifications/threads/$id; done`, and the user copies it into a terminal. The page shows the plain `gh` call rather than the `done` command so the user can see what they run. The page cannot call GitHub itself, because a local HTML file has no access to the user's token, and putting a token in the browser would expose it. Both the page and `done` accept only numeric IDs, so a bad ID cannot reach another API path.
+
+`done` exists for Claude. When the user names threads in chat, Claude runs `done`, because the gh-read hook blocks Bash commands that call `gh api` directly.
 
 ### Page design
 
