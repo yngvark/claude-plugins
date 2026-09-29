@@ -322,7 +322,7 @@ def done_box(t: dict) -> str:
 DONE_SCRIPT = """
 const boxes = [...document.querySelectorAll('input.done')];
 const bar = document.getElementById('donebar'), cmd = document.getElementById('donecmd');
-const del = id => 'gh api --method DELETE notifications/threads/' + id;
+const del = id => 'gh api --silent --method DELETE notifications/threads/' + id;
 function update() {
   const ids = [...new Set(boxes.filter(b => b.checked).map(b => b.dataset.id))].filter(id => /^\\d+$/.test(id));
   bar.hidden = !ids.length;
