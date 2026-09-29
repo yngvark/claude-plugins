@@ -51,6 +51,19 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px
 td { padding: 7px 6px; border-top: 1px solid var(--line); vertical-align: top; }
 th { padding: 7px 6px; text-align: left; font-weight: 600; color: var(--muted); white-space: nowrap; }
 
+input.done { width: 16px; height: 16px; margin: 0; accent-color: var(--a); cursor: pointer; }
+td:first-child { width: 16px; }
+main { padding-bottom: 72px; }
+#donebar {
+  position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--card);
+  border-top: 1px solid var(--line); box-shadow: 0 -2px 8px rgb(0 0 0 / .08); font-size: 13px;
+}
+#donebar[hidden] { display: none; }
+#donecmd { flex: 1; min-width: 0; font: 12px ui-monospace, monospace; padding: 6px 8px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+#donecopy { font: inherit; font-weight: 600; padding: 6px 14px; color: #fff; background: var(--a); border: 0; border-radius: 6px; cursor: pointer; }
+[data-theme=dark] #donecopy { color: var(--bg); }
+
 /* Light mode */
 [data-theme=light] .stat, [data-theme=light] .item, [data-theme=light] details.other { background: var(--card); border-radius: 14px; box-shadow: 0 2px 8px rgb(0 0 0 / .06); }
 [data-theme=light] .item { border-left: 5px solid var(--line); }

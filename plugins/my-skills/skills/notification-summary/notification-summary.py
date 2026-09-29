@@ -19,9 +19,13 @@ does the deterministic parts:
     render NOTIFICATIONS_JSON SUMMARY_JSON [--out FILE]
         Merge Claude's summary (sections, priorities, one-line reasons and
         summaries) with the fetched facts and write an HTML page. Prints the
-        path.
+        path. The page builds a `done` command from the threads the user ticks.
 
-All GitHub calls are GET requests through the `gh` CLI.
+    done ID [ID ...]
+        Mark notification threads as done, so the next fetch leaves them out.
+        GitHub shows a done thread again when it gets new activity.
+
+All GitHub calls go through the `gh` CLI. Only `done` changes anything.
 """
 
 import argparse
@@ -29,6 +33,7 @@ import datetime as dt
 import html
 import json
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -89,6 +94,13 @@ def gh_get(path: str):
     if res.returncode != 0:
         raise RuntimeError(f"GET {path} failed: {res.stderr.strip()}")
     return json.loads(res.stdout or "null")
+
+
+def gh_delete(path: str) -> None:
+    """DELETE one GitHub API path through the gh CLI."""
+    res = subprocess.run(["gh", "api", "--method", "DELETE", path], capture_output=True, text=True)
+    if res.returncode != 0:
+        raise RuntimeError(res.stderr.strip())
 
 
 def ci_state(check_runs: list) -> str:
@@ -293,13 +305,38 @@ def card(t: dict, s: dict, now: dt.datetime) -> str:
     tag_html = "".join(f'<span class="tag {c}">{e(x)}</span>' for x, c in tags(t))
     return (
         f'<article class="item p{pri} k-{k}">'
-        f'<div class="top"><span class="kind {k}">{label}</span><a href="{e(t["url"])}">{e(t["title"])}</a>'
+        f'<div class="top">{done_box(t)}<span class="kind {k}">{label}</span><a href="{e(t["url"])}">{e(t["title"])}</a>'
         f'<span class="repo">{e(t["repo"])} #{t["number"]}</span></div>'
         f'<p class="why">{lead}{e(status_line(t, now))}</p>'
         f'<p class="sum">{e(s.get("summary"))}</p>'
         + (f'<div class="tags">{tag_html}</div>' if tag_html else "")
         + "</article>"
     )
+
+
+def done_box(t: dict) -> str:
+    return f'<input type="checkbox" class="done" data-id="{e(t["id"])}" title="Mark as done" aria-label="Mark as done">'
+
+
+# Shows the `done` command for the ticked threads in the bottom panel.
+DONE_SCRIPT = """
+const boxes = [...document.querySelectorAll('input.done')];
+const bar = document.getElementById('donebar'), cmd = document.getElementById('donecmd');
+function update() {
+  const ids = [...new Set(boxes.filter(b => b.checked).map(b => b.dataset.id))];
+  bar.hidden = !ids.length;
+  cmd.value = bar.dataset.script + ' done ' + ids.join(' ');
+  document.getElementById('donecount').textContent = ids.length;
+}
+boxes.forEach(b => b.addEventListener('change', update));
+document.getElementById('donecopy').addEventListener('click', async e => {
+  cmd.select();
+  try { await navigator.clipboard.writeText(cmd.value); e.target.textContent = 'Copied'; }
+  catch { e.target.textContent = 'Press ⌘C'; }
+  setTimeout(() => e.target.textContent = 'Copy', 1500);
+});
+update();
+"""
 
 
 def describe_query(q: dict) -> str:
@@ -335,17 +372,25 @@ def render(data: dict, summary: dict, css: str) -> str:
             body += [card(t, s, now) for t, s in placed[key]]
     if other:
         rows = "".join(
-            f'<tr><td><span class="kind {kind(t)[0]}">{kind(t)[1]}</span></td>'
+            f'<tr><td>{done_box(t)}</td><td><span class="kind {kind(t)[0]}">{kind(t)[1]}</span></td>'
             f'<td><a href="{e(t["url"])}">{e(t["title"])}</a></td>'
             f'<td class="repo">{e(t["repo"])} #{t["number"]}</td><td class="repo">{e(t["author"])}</td>'
             f'<td class="repo">{ago(t["updated_at"], now)}</td></tr>'
             for t in other
         )
-        head = "<thead><tr><th></th><th>Title</th><th>Repo</th><th>Author</th><th>Updated ↓</th></tr></thead>"
+        head = "<thead><tr><th></th><th></th><th>Title</th><th>Repo</th><th>Author</th><th>Updated ↓</th></tr></thead>"
         body.append(f'<details class="other"><summary>{len(other)} other notifications</summary>'
                     f'<div class="wrap"><table>{head}<tbody>{rows}</tbody></table></div></details>')
     if not data["threads"]:
         body.append("<p>No notifications match this query.</p>")
+
+    if data["threads"]:
+        body.append(
+            f'<div id="donebar" hidden data-script="{e(shlex.quote(str(Path(__file__).resolve())))}">'
+            '<span><b id="donecount">0</b> to mark as done. Run in a terminal:</span>'
+            '<input id="donecmd" readonly aria-label="Command"><button id="donecopy" type="button">Copy</button></div>'
+            f"<script>{DONE_SCRIPT}</script>"
+        )
 
     local = now.astimezone()
     meta = (f"{local:%d %b %Y, %H:%M} · {len(data['threads'])} notifications since "
@@ -364,6 +409,26 @@ def render(data: dict, summary: dict, css: str) -> str:
     )
 
 
+# ---------- done ----------
+
+
+def mark_done(ids: list[str], delete=gh_delete) -> int:
+    """Mark each notification thread as done. Returns the exit code."""
+    bad = [i for i in ids if not i.isdigit()]
+    if bad:
+        print(f"thread IDs must be numbers: {' '.join(bad)}", file=sys.stderr)
+        return 2
+    failed = False
+    for i in ids:
+        try:
+            delete(f"notifications/threads/{i}")
+            print(f"done {i}")
+        except RuntimeError as err:
+            failed = True
+            print(f"failed {i}: {err}", file=sys.stderr)
+    return 1 if failed else 0
+
+
 # ---------- cli ----------
 
 
@@ -378,7 +443,12 @@ def main(argv=None) -> int:
     r.add_argument("notifications")
     r.add_argument("summary")
     r.add_argument("--out", help="HTML file (default: next to NOTIFICATIONS_JSON)")
+    d = sub.add_parser("done")
+    d.add_argument("ids", nargs="+", metavar="ID")
     a = p.parse_args(argv)
+
+    if a.cmd == "done":
+        return mark_done(a.ids)
 
     if a.cmd == "fetch":
         try:

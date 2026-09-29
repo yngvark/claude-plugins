@@ -30,7 +30,13 @@ The default query comes from `$NOTIFICATION_SUMMARY_QUERY`. This repo is public,
 
 ### GitHub access
 
-The script calls `gh api --method GET` directly instead of going through the `gh-read` plugin. It uses a fixed set of read-only endpoints, and depending on another plugin's install path would break when that plugin is not installed.
+The script calls `gh api` directly instead of going through the `gh-read` plugin. It uses a fixed set of endpoints, and depending on another plugin's install path would break when that plugin is not installed. `fetch` only reads.
+
+### Marking as done
+
+`done ID...` sends `DELETE /notifications/threads/{id}`, which is GitHub's "mark as done". GitHub then leaves the thread out of the notifications list until it gets new activity, so the next run of the skill does not show it again. The script keeps no state of its own for this.
+
+Each thread on the page has a checkbox. The page shows the `done` command for the ticked threads, with the script's absolute path, and the user copies it into a terminal. The page cannot call GitHub itself, because a local HTML file has no access to the user's token, and putting a token in the browser would expose it. `done` accepts only numeric IDs, so a mangled paste cannot reach another API path.
 
 ### Page design
 

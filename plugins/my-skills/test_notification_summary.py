@@ -216,6 +216,38 @@ def test_cli_render(tmp_path):
     assert "--bg: #ffffff" in out and "data-theme=dark" in out
 
 
+class TestDone:
+    def test_render_has_a_checkbox_per_thread(self):
+        h = TestRender.html
+        for i in ("1", "2", "3"):
+            assert h.count(f'class="done" data-id="{i}"') == 1
+        assert 'id="donebar" hidden' in h and "notification-summary.py" in h
+
+    def test_marks_each_thread_done(self, capsys):
+        calls = []
+        assert ns.mark_done(["11", "12"], delete=calls.append) == 0
+        assert calls == ["notifications/threads/11", "notifications/threads/12"]
+        assert capsys.readouterr().out == "done 11\ndone 12\n"
+
+    def test_failure_continues_and_exits_1(self, capsys):
+        calls = []
+
+        def delete(path):
+            calls.append(path)
+            if path.endswith("/11"):
+                raise RuntimeError("HTTP 404")
+
+        assert ns.mark_done(["11", "12"], delete=delete) == 1
+        assert calls == ["notifications/threads/11", "notifications/threads/12"]
+        assert "failed 11: HTTP 404" in capsys.readouterr().err
+
+    def test_rejects_non_numeric_ids(self, capsys):
+        calls = []
+        assert ns.mark_done(["11", "../user"], delete=calls.append) == 2
+        assert calls == []
+        assert "../user" in capsys.readouterr().err
+
+
 def test_cli_rejects_bad_query(capsys):
     assert ns.main(["fetch", "label:bug"]) == 2
     assert "unsupported" in capsys.readouterr().err

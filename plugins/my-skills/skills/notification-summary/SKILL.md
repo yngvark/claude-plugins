@@ -7,7 +7,7 @@ description: Summarize the most important GitHub issues and PRs from the user's 
 
 Builds an HTML page that sorts the user's GitHub notifications into "Needs you", "Worth reading" and a collapsed "Other" table, with a one- or two-sentence summary per thread.
 
-The script is `${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py`. It only makes GET requests through `gh`.
+The script is `${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py`. It calls GitHub through `gh`. Only the `done` command changes anything.
 
 ## 1. Pick the query
 
@@ -58,3 +58,13 @@ ${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py render
 ```
 
 Give the user the printed HTML path as an `open <path>` command. The page follows the OS light/dark setting; `?theme=light` or `?theme=dark` overrides it.
+
+## 5. Mark as done
+
+Each thread on the page has a checkbox. Ticking threads shows a command at the bottom of the page that the user runs in a terminal:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py done <thread id> [<thread id> ...]
+```
+
+It marks the notifications as done on GitHub, so the next fetch leaves them out until they get new activity. If the user names threads in chat instead ("mark the Renovate PRs as done"), look up their IDs in `notifications.json` and run the command yourself.
