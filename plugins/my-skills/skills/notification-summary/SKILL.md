@@ -5,7 +5,7 @@ description: Summarize the most important GitHub issues and PRs from the user's 
 
 # notification-summary
 
-Builds an HTML page that sorts the user's GitHub notifications into "Needs you", "Worth reading" and a collapsed "Other" table, with a one- or two-sentence summary per thread.
+Builds an HTML page that opens with a few highlights, then sorts the user's GitHub notifications into "Needs you", "Worth reading" and a collapsed "Other" table, with a one- or two-sentence summary per thread.
 
 The script is `${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py`. It calls GitHub through `gh`. Only the `done` command changes anything.
 
@@ -36,6 +36,10 @@ Write `summary.json` next to it:
 ```json
 {
   "title": "Platform team notifications",
+  "highlights": [
+    {"label": "Top priority", "text": "On [platform#412](https://github.com/acme/platform/pull/412), bob asked you to decide on the provider version. The release waits on it."},
+    {"label": "Other review requests", "text": "Four more PRs wait on your review. Two of them are already approved."}
+  ],
   "items": [
     {"id": "<thread id>", "section": "needs_you", "priority": 1,
      "reason": "Review requested from you",
@@ -49,6 +53,7 @@ Write `summary.json` next to it:
 - Leave out everything else (bot PRs, quiet threads, trivial merges). The page lists those under "Other".
 - `reason` is a short lead-in for `needs_you` items. Omit it for `worth_reading`.
 - `summary` says where the thread stands and what the user would need to know, in one or two plain sentences. Base it on the body and recent comments, not only the title. Backticks render as code.
+- `highlights` is the short answer to "what should I do now?". Write two to four items, most urgent first, each with a label of one to three words and one or two plain sentences. Group threads where that helps ("Six more PRs wait on your review"). Link threads as `[repo#N](url)`; only http(s) links render. Give the user the same highlights in chat.
 - `title` names the query in a few words.
 
 ## 4. Render
@@ -57,7 +62,7 @@ Write `summary.json` next to it:
 ${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py render <dir>/notifications.json <dir>/summary.json
 ```
 
-Give the user the printed HTML path as an `open <path>` command. The page follows the OS light/dark setting; `?theme=light` or `?theme=dark` overrides it.
+The command opens the page in the default browser and prints its path; pass `--no-open` to skip that. The page follows the OS light/dark setting; `?theme=light` or `?theme=dark` overrides it.
 
 ## 5. Mark as done
 

@@ -93,3 +93,10 @@ main { padding-bottom: 72px; }
 [data-theme=dark] .tag.ok { color: var(--green); }
 [data-theme=dark] code { background: color-mix(in srgb, var(--muted) 22%, var(--card)); border-radius: 6px; }
 [data-theme=dark] a:hover { color: var(--a); }
+
+.highlights { margin: 0 0 8px; padding: 14px 18px 14px 34px; }
+.highlights li { margin: 4px 0; }
+.highlights b { color: var(--a); }
+.highlights a { color: var(--a); }
+[data-theme=light] .highlights { background: var(--card); border-radius: 14px; box-shadow: 0 2px 8px rgb(0 0 0 / .06); }
+[data-theme=dark] .highlights { background: var(--card); border: 1px solid var(--line); border-radius: 10px; }

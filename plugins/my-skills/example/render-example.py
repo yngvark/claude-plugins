@@ -69,6 +69,14 @@ DATA = {
 
 SUMMARY = {
     "title": "Platform team notifications",
+    "highlights": [
+        {"label": "Top priority", "text": "alice's AWS provider upgrade "
+                  "([platform#412](https://github.com/acme/platform/pull/412)) needs your review before the Friday "
+                  "release."},
+        {"label": "Your PR", "text": "[checkout#88](https://github.com/acme/checkout/pull/88) has changes "
+                  "requested and failing CI."},
+        {"label": "Assigned", "text": "Nobody has picked up the stuck PENDING orders issue yet."},
+    ],
     "items": [
         {"id": "1", "section": "needs_you", "priority": 1, "reason": "Review requested from you",
          "summary": "Bumps the AWS provider in every template. alice approved; dave waits on a second approval "

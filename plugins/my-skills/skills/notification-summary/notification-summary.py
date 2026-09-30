@@ -16,10 +16,10 @@ does the deterministic parts:
         notifications URL or its query string, e.g.
         "topic:foo author:alice author:bob".
 
-    render NOTIFICATIONS_JSON SUMMARY_JSON [--out FILE]
-        Merge Claude's summary (sections, priorities, one-line reasons and
-        summaries) with the fetched facts and write an HTML page. Prints the
-        path. The page builds a `gh` command that marks the ticked threads
+    render NOTIFICATIONS_JSON SUMMARY_JSON [--out FILE] [--no-open]
+        Merge Claude's summary (highlights, sections, priorities, one-line
+        reasons and summaries) with the fetched facts and write an HTML page.
+        Prints the path and opens the page in the default browser. The page builds a `gh` command that marks the ticked threads
         as done.
 
     done ID [ID ...]
@@ -37,6 +37,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -245,6 +246,20 @@ def e(text) -> str:
     return re.sub(r"`([^`]+)`", r"<code>\1</code>", html.escape(str(text or "")))
 
 
+def e_links(text) -> str:
+    """Like e(), and also turn [text](https://...) into links."""
+    return re.sub(r"\[([^\]]+)\]\((https?://[^\s)\"]+)\)", r'<a href="\2">\1</a>', e(text))
+
+
+def highlights(items: list) -> str:
+    rows = []
+    for h in items:
+        if h.get("text"):
+            label = f"<b>{e(h['label'])}:</b> " if h.get("label") else ""
+            rows.append(f"<li>{label}{e_links(h['text'])}</li>")
+    return f'<ul class="highlights">{"".join(rows)}</ul>' if rows else ""
+
+
 def kind(t: dict) -> tuple[str, str]:
     if t["state"] == "merged":
         return "merged", "Merged"
@@ -366,7 +381,7 @@ def render(data: dict, summary: dict, css: str) -> str:
         f'<div class="stat s{i}"><b>{n}</b><span>{label}</span></div>'
         for i, (n, label) in enumerate(zip(counts, ["need you", "worth reading", "other"]), 1)
     )
-    body = [f'<div class="stats">{stats}</div>']
+    body = [f'<div class="stats">{stats}</div>', highlights(summary.get("highlights", []))]
     for key, name, sub in SECTIONS:
         if placed[key]:
             body.append(f"<h2>{name} <small>{sub}</small></h2>")
@@ -444,6 +459,7 @@ def main(argv=None) -> int:
     r.add_argument("notifications")
     r.add_argument("summary")
     r.add_argument("--out", help="HTML file (default: next to NOTIFICATIONS_JSON)")
+    r.add_argument("--no-open", action="store_true", help="don't open the page in the browser")
     d = sub.add_parser("done")
     d.add_argument("ids", nargs="+", metavar="ID")
     a = p.parse_args(argv)
@@ -471,6 +487,8 @@ def main(argv=None) -> int:
     out = Path(a.out) if a.out else Path(a.notifications).parent / "notification-summary.html"
     out.write_text(render(data, summary, css))
     print(out)
+    if not a.no_open:
+        webbrowser.open(out.resolve().as_uri())
     return 0
 
 

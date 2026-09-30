@@ -11,8 +11,8 @@ The user follows several teams' repositories through GitHub notifications. The n
 `notification-summary.py` does the deterministic work, and Claude does the judgement:
 
 1. `fetch` gets notifications, applies the query's filters, and enriches each issue or PR thread with author, state, CI result, review decision, body and the comments since the user last read the thread. It writes `notifications.json` to a new temp dir.
-2. Claude reads that file and writes `summary.json`. It lists only the threads worth showing, each with a section, priority, lead-in reason and one- or two-sentence summary.
-3. `render` merges the two files into HTML. Facts such as title, link, author, age, CI and diff size come from `notifications.json`, so Claude cannot misstate them. Threads that Claude left out go into a collapsed "Other" table, newest activity first with an "Updated" column, so nothing disappears silently.
+2. Claude reads that file and writes `summary.json`. It lists only the threads worth showing, each with a section, priority, lead-in reason and one- or two-sentence summary. It also writes two to four highlights that answer "what should I do now?" and that render at the top of the page.
+3. `render` merges the two files into HTML and opens the page in the default browser. Facts such as title, link, author, age, CI and diff size come from `notifications.json`, so Claude cannot misstate them. Threads that Claude left out go into a collapsed "Other" table, newest activity first with an "Updated" column, so nothing disappears silently.
 
 Keeping rendering in the script means the page looks the same every run and that tests cover it. Claude writes judgements only, which keeps its output small.
 
@@ -42,6 +42,6 @@ Each thread on the page has a checkbox. The page shows a command for the ticked 
 
 ### Page design
 
-The page has a white background with soft, shadowed cards in light mode and near-black with bordered cards in dark mode. The accents are Mediterranean colors: sea blue, terracotta, lemon, green and purple. Priority 1 items are tinted terracotta, and priority 2 items are tinted amber. The page follows the OS theme, and `?theme=light|dark` overrides it. The CSS lives in `summary.css` next to the script.
+The page has a white background with soft, shadowed cards in light mode and near-black with bordered cards in dark mode. The accents are Mediterranean colors: sea blue, terracotta, lemon, green and purple. Priority 1 items are tinted terracotta, and priority 2 items are tinted amber. Highlights sit in one card between the counters and the sections. Their text may contain `[text](url)` links, and the script turns only http(s) URLs into links. The page follows the OS theme, and `?theme=light|dark` overrides it. The CSS lives in `summary.css` next to the script.
 
 The README shows `example/screenshot.png`. `example/render-example.py` renders the page it is taken from, using fictional repositories and people, because this repo is public and real notifications name colleagues and internal repos. Rerun it and screenshot the HTML at 900px width in light mode after changing the page design.

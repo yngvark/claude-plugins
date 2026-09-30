@@ -162,7 +162,10 @@ DATA = {
         thread(3, title="<script>alert(1)</script>"),
     ],
 }
-SUMMARY = {"title": "Team", "items": [
+SUMMARY = {"title": "Team", "highlights": [
+    {"label": "Top priority", "text": "Review [#1](https://github.com/org/r/pull/1) before `Friday`."},
+    {"text": "No label <here>."},
+], "items": [
     {"id": "2", "section": "worth_reading", "summary": "Adds `ok pkg`."},
     {"id": "1", "section": "needs_you", "priority": 1, "reason": "Your PR is blocked", "summary": "Fix CI."},
     {"id": "999", "section": "needs_you", "summary": "unknown id is ignored"},
@@ -203,17 +206,46 @@ class TestRender:
     def test_stats(self):
         assert '<b>1</b><span>need you</span>' in self.html
 
+    def test_highlights_before_sections(self):
+        h = self.html
+        assert '<ul class="highlights"><li><b>Top priority:</b> Review ' in h
+        assert '<a href="https://github.com/org/r/pull/1">#1</a> before <code>Friday</code>' in h
+        assert "<li>No label &lt;here&gt;.</li>" in h
+        assert h.index('class="highlights"') < h.index("Needs you")
+
+    def test_highlight_links_only_for_http(self):
+        assert ns.e_links("[x](javascript:alert(1))") == "[x](javascript:alert(1))"
+        assert ns.e_links('[x](https://a/?q=1&b=")') == '<a href="https://a/?q=1&amp;b=&quot;">x</a>'
+
+    def test_no_highlights(self):
+        assert 'class="highlights"' not in ns.render(DATA, {"items": []}, "")
+
     def test_empty(self):
         h = ns.render({**DATA, "threads": []}, {"items": []}, "")
         assert "No notifications match" in h
 
 
-def test_cli_render(tmp_path):
+@pytest.fixture
+def opened(monkeypatch):
+    urls = []
+    monkeypatch.setattr(ns.webbrowser, "open", urls.append)
+    return urls
+
+
+def test_cli_render_opens_page(tmp_path, opened):
     (tmp_path / "n.json").write_text(json.dumps(DATA))
     (tmp_path / "s.json").write_text(json.dumps(SUMMARY))
     assert ns.main(["render", str(tmp_path / "n.json"), str(tmp_path / "s.json")]) == 0
-    out = (tmp_path / "notification-summary.html").read_text()
-    assert "--bg: #ffffff" in out and "data-theme=dark" in out
+    out = tmp_path / "notification-summary.html"
+    assert "--bg: #ffffff" in out.read_text() and "data-theme=dark" in out.read_text()
+    assert opened == [out.resolve().as_uri()]
+
+
+def test_cli_render_no_open(tmp_path, opened):
+    (tmp_path / "n.json").write_text(json.dumps(DATA))
+    (tmp_path / "s.json").write_text(json.dumps(SUMMARY))
+    assert ns.main(["render", str(tmp_path / "n.json"), str(tmp_path / "s.json"), "--no-open"]) == 0
+    assert opened == []
 
 
 class TestDone:
