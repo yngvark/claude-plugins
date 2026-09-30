@@ -411,7 +411,11 @@ def render(data: dict, summary: dict, css: str) -> str:
     local = now.astimezone()
     meta = (f"{local:%d %b %Y, %H:%M} · {len(data['threads'])} notifications since "
             f"{parse_time(data['since']).astimezone():%d %b} · {describe_query(data['query'])}")
-    title = summary.get("title") or "Notification summary"
+    return page(summary.get("title") or "Notification summary", meta, "".join(body), css)
+
+
+def page(title: str, meta: str, body: str, css: str) -> str:
+    """Wrap body HTML in the page shell shared with repo-watch."""
     return (
         "<!doctype html><html><head><meta charset=utf-8>"
         "<meta name=viewport content='width=device-width,initial-scale=1'>"
@@ -421,7 +425,7 @@ def render(data: dict, summary: dict, css: str) -> str:
         "(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');"
         "document.documentElement.dataset.theme=t}</script>"
         f"<style>{css}</style></head><body><main>"
-        f"<h1>{e(title)}</h1><p class=meta>{e(meta)}</p>{''.join(body)}</main></body></html>"
+        f"<h1>{e(title)}</h1><p class=meta>{e(meta)}</p>{body}</main></body></html>"
     )
 
 
