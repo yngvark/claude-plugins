@@ -26,7 +26,7 @@ Supported terms: `topic:`, `author:`, `repo:`, `org:`, `reason:`, `is:unread`, `
 ${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py fetch "<query>" [--days N]
 ```
 
-It prints the path to `notifications.json` in a new temp dir. GitHub's notifications API rejects fine-grained tokens, so the script lists notifications with `$GITHUB_NOTIFICATIONS_TOKEN` (a classic token) when it is set. If the fetch fails because that variable is missing, tell the user to relaunch the sandbox with the env bundle that provides `GITHUB_NOTIFICATIONS_TOKEN` (`sc2 -e github-notifications`), and stop. If `gh` fails because it cannot read its config, tell the user and stop.
+It prints the path to `notifications.json` in a new temp dir. GitHub's notifications API rejects fine-grained tokens, so the script lists notifications with `$GITHUB_NOTIFICATIONS_TOKEN` (a classic token) when it is set. If the fetch fails because that variable is missing, tell the user to relaunch the sandbox with the env bundle that provides `GITHUB_NOTIFICATIONS_TOKEN` (`sc2 -e gn`), and stop. If `gh` fails because it cannot read its config, tell the user and stop.
 
 ## 3. Judge
 
