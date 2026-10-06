@@ -75,8 +75,8 @@ sentence "See Foo.md" as a new note.
 ## Notes
 
 - Read-only. Do not edit, rename, move, or reorganize notes here — the user's
-  vault is theirs. Use the `note` skill to add a note, and
-  `daily-notes-add-title` to rename daily notes.
+  vault is theirs. Use the `note` skill to add a note. To rename
+  daily notes, tell the user to run `/daily-notes-add-title`.
 - Notes are personal. Quote what's needed to answer, don't dump a whole file
   back at the user, and keep the folder path out of your reply unless asked.
 - Hidden folders (`.obsidian/`, `.trash/`) are skipped by design.

@@ -21,6 +21,8 @@ here depends on Obsidian) as a "second brain". Four recurring needs:
 
 The plugin ships four skills — `/note`, `/read-note`,
 `/daily-notes-add-title`, and `/add-date-prefix` — that cover these.
+The two renaming skills are slash-only, so Claude never renames notes in bulk
+unless the user starts it.
 
 Needs 3 and 4 are the same convention approached from opposite ends: one adds
 the missing title to a dated name, the other adds the missing date to a titled

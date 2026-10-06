@@ -1,6 +1,7 @@
 ---
 name: notification-summary
-description: Summarize the most important GitHub issues and PRs from the user's notifications into an HTML page in a temp dir. Use when the user asks to summarize, triage or catch up on GitHub notifications, or passes a github.com/notifications URL or query.
+description: Summarize the most important GitHub issues and PRs from the user's notifications into an HTML page in a temp dir. Takes an optional github.com/notifications URL or query.
+disable-model-invocation: true
 ---
 
 # notification-summary

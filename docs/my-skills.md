@@ -2,6 +2,8 @@
 
 `my-skills` holds skills that have nothing in common except that the user finds them useful. Each new skill goes here instead of into its own plugin, so consumers install once and get new skills on update. A skill moves to its own plugin only if it grows hooks, settings or enough surface to deserve a separate install.
 
+Both skills are slash-only. They build reports the user always asks for explicitly, and keeping them out of Claude's skill list keeps their descriptions out of every session's context.
+
 ## notification-summary
 
 The user follows several teams' repositories through GitHub notifications. The notifications page lists threads in update order, so the few that need action (a requested review, a blocked PR) sit between Renovate PRs and quiet subscriptions. The skill reads the same notifications and produces a local HTML page that puts the actionable threads first, with a short summary of each.

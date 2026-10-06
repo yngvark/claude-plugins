@@ -1,6 +1,7 @@
 ---
 name: repo-watch
-description: Build an HTML page that lists, per repository, the workflows whose latest run on the default branch failed, open PRs by the user's team, and open issues, with dependency-update PRs left out. Use when the user asks what is open or broken in their team's repos, asks for the repo watch page, or wants a notifications view without the Renovate noise.
+description: Build an HTML page that lists, per repository, the workflows whose latest run on the default branch failed, open PRs by the user's team, and open issues, with dependency-update PRs left out.
+disable-model-invocation: true
 ---
 
 # repo-watch

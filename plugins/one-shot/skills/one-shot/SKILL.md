@@ -1,6 +1,7 @@
 ---
 name: one-shot
-description: Activate one-shot mode for the rest of this session — delegate every clarifying question to the one-shot-decider subagent so the user is not interrupted during design or implementation. Use this when the user runs /one-shot or asks to enable one-shot mode. The user supplies high-level intent once; all subsequent decisions are made by the decider, logged to a project file, and the user is only re-interrupted for plan-mode plan approval (ExitPlanMode).
+description: Activate one-shot mode for the rest of this session. The one-shot-decider subagent answers clarifying questions on the user's behalf and logs each decision to a project file. The user is only interrupted for plan-mode plan approval (ExitPlanMode).
+disable-model-invocation: true
 ---
 
 # One-Shot Mode

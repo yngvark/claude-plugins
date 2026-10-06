@@ -1,6 +1,7 @@
 ---
 name: session-review
-description: Use when the user wants to retrospect on the current Claude Code session and improve future ones. Triggers on "review this session", "what should we add to CLAUDE.md", "did we learn anything reusable", "/session-review", or similar. Reads the session transcript, inventories CLAUDE.md files at the repo root and subdirs, proposes targeted updates as diffs, and surfaces new-skill candidates.
+description: Retrospect on the current Claude Code session. Reads the session transcript, inventories CLAUDE.md files at the repo root and subdirs, proposes targeted updates as diffs, and surfaces new-skill candidates.
+disable-model-invocation: true
 ---
 
 # session-review — retrospect on a completed session

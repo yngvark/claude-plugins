@@ -11,6 +11,8 @@ Skills I find useful that don't necessarily belong together. They share one plug
 
 ## Skills
 
+Run each skill with its slash command, `/notification-summary` or `/repo-watch`. Claude does not start them on its own.
+
 ### notification-summary
 
 Summarizes the most important GitHub issues and PRs in your notifications into an HTML page in a temp dir, and opens it. The page starts with a few highlights of what to do now. Threads are sorted into "Needs you", "Worth reading" and a collapsed list of the rest, each with a short summary of where it stands.

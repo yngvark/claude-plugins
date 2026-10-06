@@ -11,7 +11,7 @@ During long design or implementation sessions, Claude Code regularly asks the us
 Three components, all auto-discovered by Claude Code:
 
 1. **Skill: `one-shot`** (`skills/one-shot/SKILL.md`)
-   The activation entry point. When the user asks to activate one-shot mode, the skill loads a set of rules that the main agent follows for the rest of the session: delegate clarifying questions to the decider, log every Q&A, never narrate Q&As back to the user mid-stream.
+   The activation entry point. Only the user can start it, by running `/one-shot`. Once started, the skill loads a set of rules that the main agent follows for the rest of the session: delegate clarifying questions to the decider, log every Q&A, never narrate Q&As back to the user mid-stream.
 
 2. **Subagent: `one-shot-decider`** (`agents/one-shot-decider.md`)
    Read-only subagent (tools: Read, Grep, Glob, WebSearch, WebFetch, Bash). Takes a question, the user's preferences, and project context. Outputs exactly two lines: `ANSWER:` and `REASONING:`. Has hard rules against follow-up questions and against modifying files. Returns `ANSWER: REDIRECT_TO_USER` for things only the human can decide (plan approval, sensitive credentials, taste with no preference signal).
