@@ -7,6 +7,7 @@
 
 import datetime as dt
 import json
+import subprocess
 import sys
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
@@ -116,6 +117,35 @@ class FakeGitHub:
 
 
 class TestFetch:
+    def test_unreadable_thread_is_kept_with_notification_data(self):
+        """A fine-grained token reads only its owner's repos. A thread it cannot
+        read stays in the result instead of aborting the fetch."""
+        gh = FakeGitHub()
+
+        def get(path):
+            if path.endswith("/issues/11"):
+                raise RuntimeError("HTTP 404")
+            return gh(path)
+
+        data = ns.Fetcher(get=get, workers=1).fetch(ns.parse_query("author:alice"), 7, NOW)
+        bare = next(t for t in data["threads"] if t["number"] == 11)
+        assert bare["enriched"] is False
+        assert bare["title"] == "t2" and bare["repo"] == "org/infra"
+        assert bare["url"] == "https://github.com/org/infra/issues/11"
+        assert "not readable" in ns.status_line(bare, NOW)
+        assert all(t["enriched"] for t in data["threads"] if t["number"] != 11)
+
+    def test_unreadable_repo_has_no_topics(self):
+        gh = FakeGitHub()
+
+        def get(path):
+            if path == "repos/org/website":
+                raise RuntimeError("HTTP 403")
+            return gh(path)
+
+        data = ns.Fetcher(get=get, workers=1).fetch(ns.parse_query("topic:platform"), 7, NOW)
+        assert {t["repo"] for t in data["threads"]} == {"org/infra"}
+
     def test_filters_by_topic_and_author_and_enriches(self):
         gh = FakeGitHub()
         data = ns.Fetcher(get=gh, workers=1).fetch(ns.parse_query("topic:platform author:alice author:bob"), 7, NOW)
@@ -246,6 +276,47 @@ def test_cli_render_no_open(tmp_path, opened):
     (tmp_path / "s.json").write_text(json.dumps(SUMMARY))
     assert ns.main(["render", str(tmp_path / "n.json"), str(tmp_path / "s.json"), "--no-open"]) == 0
     assert opened == []
+
+
+class TestTokens:
+    """GitHub's notifications API rejects fine-grained tokens, so notification
+    calls use the classic GITHUB_NOTIFICATIONS_TOKEN and everything else keeps
+    gh's default auth."""
+
+    def test_notification_paths_get_the_classic_token(self):
+        env = {"GITHUB_TOKEN": "fine", "GITHUB_NOTIFICATIONS_TOKEN": "classic"}
+        for path in ("notifications?all=true&page=1", "notifications/threads/11"):
+            assert ns.gh_env(path, env)["GH_TOKEN"] == "classic"
+
+    def test_other_paths_keep_the_default_auth(self):
+        env = {"GITHUB_TOKEN": "fine", "GITHUB_NOTIFICATIONS_TOKEN": "classic"}
+        for path in ("user", "repos/org/infra", "repos/org/infra/pulls/10", "repos/org/infra/issues/11/comments"):
+            assert ns.gh_env(path, env) is None
+
+    def test_without_the_variable_nothing_changes(self):
+        assert ns.gh_env("notifications?all=true", {"GITHUB_TOKEN": "fine"}) is None
+
+    def test_gh_get_and_delete_pass_the_token_to_gh(self, monkeypatch):
+        seen = []
+
+        def run(args, **kw):
+            seen.append((args[-1], (kw.get("env") or {}).get("GH_TOKEN")))
+            return subprocess.CompletedProcess(args, 0, "[]", "")
+
+        monkeypatch.setenv("GITHUB_NOTIFICATIONS_TOKEN", "classic")
+        monkeypatch.setattr(ns.subprocess, "run", run)
+        ns.gh_get("notifications?all=true")
+        ns.gh_get(ns.API_PREFIX + "repos/org/infra/issues/11")
+        ns.gh_delete("notifications/threads/11")
+        assert seen == [("notifications?all=true", "classic"), ("repos/org/infra/issues/11", None),
+                        ("notifications/threads/11", "classic")]
+
+    def test_403_without_the_variable_says_what_to_set(self, monkeypatch):
+        monkeypatch.delenv("GITHUB_NOTIFICATIONS_TOKEN", raising=False)
+        monkeypatch.setattr(ns.subprocess, "run", lambda args, **kw: subprocess.CompletedProcess(
+            args, 1, "", "gh: Resource not accessible by personal access token (HTTP 403)"))
+        with pytest.raises(RuntimeError, match="GITHUB_NOTIFICATIONS_TOKEN"):
+            ns.gh_get("notifications?all=true")
 
 
 class TestDone:

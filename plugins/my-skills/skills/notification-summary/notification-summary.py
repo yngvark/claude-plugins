@@ -27,12 +27,17 @@ does the deterministic parts:
         GitHub shows a done thread again when it gets new activity.
 
 All GitHub calls go through the `gh` CLI. Only `done` changes anything.
+GitHub's notifications API rejects fine-grained tokens. When
+GITHUB_NOTIFICATIONS_TOKEN is set, the notification calls use it (a classic
+token with the `notifications` scope), and every other call uses gh's default
+auth.
 """
 
 import argparse
 import datetime as dt
 import html
 import json
+import os
 import re
 import subprocess
 import sys
@@ -43,6 +48,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 API_PREFIX = "https://api.github.com/"
+NOTIFICATIONS_TOKEN_VAR = "GITHUB_NOTIFICATIONS_TOKEN"
 BODY_LIMIT = 1500
 COMMENT_LIMIT = 600
 RECENT_COMMENTS = 8
@@ -88,20 +94,66 @@ def parse_query(raw: str) -> dict:
 # ---------- fetch ----------
 
 
+def gh_env(path: str, environ=os.environ) -> dict | None:
+    """The environment for a gh call on PATH: GITHUB_NOTIFICATIONS_TOKEN as
+    GH_TOKEN (which gh prefers over GITHUB_TOKEN) for notification endpoints,
+    otherwise None to inherit ours unchanged."""
+    token = environ.get(NOTIFICATIONS_TOKEN_VAR)
+    if token and path.startswith("notifications"):
+        return {**environ, "GH_TOKEN": token}
+    return None
+
+
+def gh_error(path: str, stderr: str) -> str:
+    msg = stderr.strip()
+    if path.startswith("notifications") and "403" in msg and not os.environ.get(NOTIFICATIONS_TOKEN_VAR):
+        msg += (f"\nGitHub's notifications API rejects fine-grained tokens. Set {NOTIFICATIONS_TOKEN_VAR}"
+                " to a classic token with the `notifications` scope.")
+    return msg
+
+
 def gh_get(path: str):
     """GET one GitHub API path through the gh CLI and return parsed JSON."""
     path = path.removeprefix(API_PREFIX)
-    res = subprocess.run(["gh", "api", "--method", "GET", path], capture_output=True, text=True)
+    res = subprocess.run(["gh", "api", "--method", "GET", path], capture_output=True, text=True, env=gh_env(path))
     if res.returncode != 0:
-        raise RuntimeError(f"GET {path} failed: {res.stderr.strip()}")
+        raise RuntimeError(f"GET {path} failed: {gh_error(path, res.stderr)}")
     return json.loads(res.stdout or "null")
 
 
 def gh_delete(path: str) -> None:
     """DELETE one GitHub API path through the gh CLI."""
-    res = subprocess.run(["gh", "api", "--method", "DELETE", path], capture_output=True, text=True)
+    res = subprocess.run(["gh", "api", "--method", "DELETE", path], capture_output=True, text=True, env=gh_env(path))
     if res.returncode != 0:
-        raise RuntimeError(res.stderr.strip())
+        raise RuntimeError(gh_error(path, res.stderr))
+
+
+def bare_thread(n: dict) -> dict:
+    """A thread from the notification alone, for when its issue or PR is unreadable."""
+    s = n["subject"]
+    repo = n["repository"]["full_name"]
+    num = int(s["url"].rstrip("/").rsplit("/", 1)[1])
+    path = "pull" if s["type"] == "PullRequest" else "issues"
+    return {
+        "id": n["id"],
+        "enriched": False,
+        "unread": n.get("unread", False),
+        "reason": n.get("reason"),
+        "updated_at": n["updated_at"],
+        "last_read_at": n.get("last_read_at"),
+        "repo": repo,
+        "type": s["type"],
+        "number": num,
+        "title": s["title"],
+        "url": f"https://github.com/{repo}/{path}/{num}",
+        "author": None,
+        "state": "open",
+        "draft": False,
+        "labels": [],
+        "comments": 0,
+        "body": "",
+        "recent_comments": [],
+    }
 
 
 def ci_state(check_runs: list) -> str:
@@ -151,11 +203,24 @@ class Fetcher:
             page += 1
 
     def repo(self, full_name: str) -> dict:
+        """The repo, or {} when the token cannot read it."""
         if full_name not in self._repos:
-            self._repos[full_name] = self.get(f"repos/{full_name}")
+            try:
+                self._repos[full_name] = self.get(f"repos/{full_name}")
+            except RuntimeError:
+                self._repos[full_name] = {}
         return self._repos[full_name]
 
     def enrich(self, n: dict) -> dict:
+        """The thread with its issue or PR details. A fine-grained token reads
+        only its owner's repos, so a thread it cannot read keeps just what the
+        notification carries, marked "enriched": false."""
+        try:
+            return self.details(n)
+        except RuntimeError:
+            return bare_thread(n)
+
+    def details(self, n: dict) -> dict:
         s = n["subject"]
         repo = n["repository"]["full_name"]
         d = self.get(s["url"])
@@ -168,6 +233,7 @@ class Fetcher:
         comments = self.get(f"repos/{repo}/issues/{num}/comments?since={since}&per_page=100") or []
         t = {
             "id": n["id"],
+            "enriched": True,
             "unread": n.get("unread", False),
             "reason": n.get("reason"),
             "updated_at": n["updated_at"],
@@ -227,7 +293,8 @@ class Fetcher:
             threads = list(ex.map(self.enrich, kept))
         if q["authors"]:
             wanted = {a.lower() for a in q["authors"]}
-            threads = [t for t in threads if (t["author"] or "").lower() in wanted]
+            # An unreadable thread has no known author, so it stays rather than vanish.
+            threads = [t for t in threads if not t["enriched"] or (t["author"] or "").lower() in wanted]
         threads.sort(key=lambda t: t["updated_at"], reverse=True)
         return {
             "me": (self.get("user") or {}).get("login"),
@@ -280,6 +347,8 @@ def ago(start: str, now: dt.datetime) -> str:
 
 
 def status_line(t: dict, now: dt.datetime) -> str:
+    if not t.get("enriched", True):
+        return f"updated {ago(t['updated_at'], now)} · details not readable with this token"
     parts = [f"by {t['author']}"]
     if t["state"] == "merged":
         parts.append(f"merged {ago(t['closed_at'], now)}")

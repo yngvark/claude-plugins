@@ -34,6 +34,8 @@ The default query comes from `$NOTIFICATION_SUMMARY_QUERY`. This repo is public,
 
 The script calls `gh api` directly instead of going through the `gh-read` plugin. It uses a fixed set of endpoints, and depending on another plugin's install path would break when that plugin is not installed. `fetch` only reads.
 
+GitHub's notifications API rejects fine-grained tokens, while the token inside a sandbox is usually fine-grained and scoped to one owner. When `GITHUB_NOTIFICATIONS_TOKEN` is set, the script sends notification endpoints (listing and marking done) with it as `GH_TOKEN`, and every other call with gh's default auth. The variable holds a classic token with only the `notifications` scope, so the broad token never reads repo content. sc2 hands it to the sandbox only on launches with `-e github-notifications`. A thread whose repo the default token cannot read stays in the result with `"enriched": false` and only the notification's own fields, instead of aborting the fetch.
+
 ### Marking as done
 
 `done ID...` sends `DELETE /notifications/threads/{id}`, which is GitHub's "mark as done". GitHub then leaves the thread out of the notifications list until it gets new activity, so the next run of the skill does not show it again. The script keeps no state of its own for this.

@@ -26,11 +26,11 @@ Supported terms: `topic:`, `author:`, `repo:`, `org:`, `reason:`, `is:unread`, `
 ${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py fetch "<query>" [--days N]
 ```
 
-It prints the path to `notifications.json` in a new temp dir. If `gh` fails because it cannot read its config (a sandbox), tell the user and stop.
+It prints the path to `notifications.json` in a new temp dir. GitHub's notifications API rejects fine-grained tokens, so the script lists notifications with `$GITHUB_NOTIFICATIONS_TOKEN` (a classic token) when it is set. If the fetch fails because that variable is missing, tell the user to relaunch the sandbox with the env bundle that provides `GITHUB_NOTIFICATIONS_TOKEN` (`sc2 -e github-notifications`), and stop. If `gh` fails because it cannot read its config, tell the user and stop.
 
 ## 3. Judge
 
-Read `notifications.json`. `me` is the user's login. Each thread has `reason` (`review_requested`, `mention`, `assign`, `author`, `comment`, `subscribed`, …), state, CI, review state, body and the comments since the user last read it.
+Read `notifications.json`. `me` is the user's login. Each thread has `reason` (`review_requested`, `mention`, `assign`, `author`, `comment`, `subscribed`, …), state, CI, review state, body and the comments since the user last read it. A thread with `"enriched": false` is in a repo the token could not read, so it has only the title, repo, reason and update time. Summarize it from those alone and say that the details were unavailable.
 
 Write `summary.json` next to it:
 
