@@ -484,7 +484,7 @@ def render(data: dict, summary: dict, css: str) -> str:
 
 
 def page(title: str, meta: str, body: str, css: str) -> str:
-    """Wrap body HTML in the page shell shared with repo-watch."""
+    """Wrap body HTML in the page shell."""
     return (
         "<!doctype html><html><head><meta charset=utf-8>"
         "<meta name=viewport content='width=device-width,initial-scale=1'>"

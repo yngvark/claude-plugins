@@ -2,7 +2,7 @@
 
 `my-skills` holds skills that have nothing in common except that the user finds them useful. Each new skill goes here instead of into its own plugin, so consumers install once and get new skills on update. A skill moves to its own plugin only if it grows hooks, settings or enough surface to deserve a separate install.
 
-Both skills are slash-only. They build reports the user always asks for explicitly, and keeping them out of Claude's skill list keeps their descriptions out of every session's context.
+notification-summary is slash-only. It builds a report the user always asks for explicitly, and keeping it out of Claude's skill list keeps its description out of every session's context.
 
 ## notification-summary
 
@@ -50,28 +50,6 @@ The page has a white background with soft, shadowed cards in light mode and near
 
 The README shows `example/screenshot.png`. `example/render-example.py` renders the page it is taken from, using fictional repositories and people, because this repo is public and real notifications name colleagues and internal repos. Rerun it and screenshot the HTML at 900px width in light mode after changing the page design.
 
-## repo-watch
+## apply-writing-rules
 
-github.com/notifications groups threads per repository, but a team's repos carry far more Renovate PRs than human ones, so the few that matter are hard to find. `repo-watch` answers a narrower question for a fixed list of repos: what is broken, what has the team got open, and which issues exist.
-
-### Live state, not notifications
-
-The page reads each repository directly instead of the notifications API. It shows everything that is open now, including threads the user never got a notification for or already marked as done. That makes it a dashboard to open at any time, while notification-summary stays the tool for catching up on what changed. A failing workflow also rarely produces a notification: GitHub only notifies the person whose push triggered the run.
-
-### What each repo section shows
-
-- **Failing workflows:** the script lists the default branch's last 100 runs, takes the latest completed run per workflow, and keeps it if its conclusion is a failure (`failure`, `timed_out`, `cancelled`, `action_required`, `startup_failure`). A workflow that failed and then passed does not show. PR runs are excluded, because a red PR is that PR's business.
-- **Team PRs:** open PRs whose author is in `authors`, matched without case. Filtering on authors rather than excluding bots means Renovate, Dependabot and anyone outside the team stay out without a deny list. Each PR gets the same CI, review and size tags as the notification-summary cards, plus a tag when a review is requested from the user.
-- **Issues:** all open issues, whoever opened them, most recently updated first, capped at 10 with a link to the rest. Renovate's "Dependency Dashboard" issue is left out, because every repo has one and it never changes meaning.
-
-Repos with nothing open share one "Nothing open in" line. Repos that fail to load go into a collapsed list at the bottom, so one missing permission does not hide the rest. GitHub answers 404 rather than 403 for a private repo when the token lacks SSO authorization, so the error text says that.
-
-### Config outside the repo
-
-This repo is public, so the watch list and the team's logins live in `~/.config/my-skills/repo-watch.toml` (or `$REPO_WATCH_CONFIG`, or `--config`). The script refuses to run without it and prints an example.
-
-### No Claude in the loop
-
-The script fetches and renders in one command, with no judgement step. The page is meant to be opened often, and a deterministic page is faster, free, and the same every time. It reuses notification-summary's helpers (`gh_get`, CI and review state, tags, the page shell) and its stylesheet by loading that script as a module, and adds `repo-watch.css` for the per-repo cards.
-
-`example/render-repo-watch-example.py` renders the page behind `example/repo-watch-screenshot.png` from fictional repos. Rerun it and screenshot at 900px in light mode after changing the page design.
+The user's writing rules for any prose a human reads. They are a skill rather than part of the user's CLAUDE.md so that only the description sits in every session's context; the ~3k-token body loads when Claude is about to write docs, PR descriptions, commit messages and similar text. It is model-invocable for that reason, unlike notification-summary. The user's CLAUDE.md keeps a one-line pointer to the skill so Claude reaches for it.

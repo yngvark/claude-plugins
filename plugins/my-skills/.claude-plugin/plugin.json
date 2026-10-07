@@ -1,6 +1,6 @@
 {
   "name": "my-skills",
-  "version": "0.4.3",
+  "version": "0.6.0",
   "description": "A grab bag of unrelated skills I find useful, kept in one plugin so a new skill needs no new install.",
   "author": {
     "name": "Yngvar Kristiansen"
@@ -8,7 +8,7 @@
   "keywords": [
     "github",
     "notifications",
-    "dashboard"
+    "writing"
   ],
   "license": "MIT"
 }

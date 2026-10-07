@@ -11,11 +11,9 @@ Skills I find useful that don't necessarily belong together. They share one plug
 
 ## Skills
 
-Run each skill with its slash command, `/notification-summary` or `/repo-watch`. Claude does not start them on its own.
-
 ### notification-summary
 
-Summarizes the most important GitHub issues and PRs in your notifications into an HTML page in a temp dir, and opens it. The page starts with a few highlights of what to do now. Threads are sorted into "Needs you", "Worth reading" and a collapsed list of the rest, each with a short summary of where it stands.
+Run it with `/notification-summary`; Claude does not start it on its own. Summarizes the most important GitHub issues and PRs in your notifications into an HTML page in a temp dir, and opens it. The page starts with a few highlights of what to do now. Threads are sorted into "Needs you", "Worth reading" and a collapsed list of the rest, each with a short summary of where it stands.
 
 ![Example summary page, with fictional repositories and people](example/screenshot.png)
 
@@ -27,21 +25,9 @@ export NOTIFICATION_SUMMARY_QUERY="topic:my-team author:alice author:bob"
 
 Supported terms are `topic:`, `author:`, `repo:`, `org:`, `reason:`, `is:unread`, `is:pr` and `is:issue`. Needs the `gh` CLI, logged in.
 
-### repo-watch
+### apply-writing-rules
 
-Builds a page per repository with the workflows whose latest run on the default branch failed, open PRs by your team, and all open issues. Dependency-update PRs never show up, because only PRs by the listed authors do. Unlike notification-summary, it shows what is open now, not what notified you.
-
-![Example repo-watch page, with fictional repositories and people](example/repo-watch-screenshot.png)
-
-Configure it in `~/.config/my-skills/repo-watch.toml`, or point `$REPO_WATCH_CONFIG` at another file:
-
-```toml
-title = "Platform"
-authors = ["alice", "bob"]
-repos = ["acme/platform", "acme/docs"]
-```
-
-Needs the `gh` CLI, logged in, with SSO authorized for the orgs you list.
+Rules for prose a human will read: docs, PR descriptions, commit messages, comments, tickets. Claude loads the skill before writing such text, or you run `/apply-writing-rules`.
 
 ## Development
 
