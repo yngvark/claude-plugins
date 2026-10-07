@@ -2,7 +2,7 @@
 
 `my-skills` holds skills that have nothing in common except that the user finds them useful. Each new skill goes here instead of into its own plugin, so consumers install once and get new skills on update. A skill moves to its own plugin only if it grows hooks, settings or enough surface to deserve a separate install.
 
-notification-summary is slash-only. It builds a report the user always asks for explicitly, and keeping it out of Claude's skill list keeps its description out of every session's context.
+notification-summary and anonymize-eval-prompts are slash-only. Each runs only when the user asks for it explicitly, and keeping them out of Claude's skill list keeps their descriptions out of every session's context.
 
 ## notification-summary
 
@@ -53,3 +53,13 @@ The README shows `example/screenshot.png`. `example/render-example.py` renders t
 ## apply-writing-rules
 
 The user's writing rules for any prose a human reads. They are a skill rather than part of the user's CLAUDE.md so that only the description sits in every session's context; the ~3k-token body loads when Claude is about to write docs, PR descriptions, commit messages and similar text. It is model-invocable for that reason, unlike notification-summary. The user's CLAUDE.md keeps a one-line pointer to the skill so Claude reaches for it.
+
+## anonymize-eval-prompts
+
+Step 2 of `claude plugin eval` asks for real prompts where a skill should or should not have helped. Real prompts make better eval cases than drafted ones, but they come from colleagues, who should not find their own words, names or systems in an eval. The skill turns real prompts into cases that keep each prompt's request and its "should help" label, and drop everything else that points back to the author.
+
+It works in two passes. Claude first replaces private details with fictional ones of the same kind, so a repository name stays a repository name and the skill under test still sees a realistic prompt. Public terms the skill reacts to, such as tool names and commands, stay. Claude then rewrites the anonymized prompts with the `lossless-text-compression` skill. That skill's true/false statements make sure each rewrite still asks for the same thing, while the compression changes the wording. Anonymizing first means the compression agents never see the private details.
+
+`check-rewrites.py` makes the result checkable without a human reading every pair. It fails a case when a removed detail is still in the rewrite, or when the rewrite shares more than four consecutive words with its original. Four words allows common phrases and short commands but catches copied sentences. The user still approves the final list, because only they know whether a rewrite is recognizable to its author.
+
+The originals live only in the session's scratchpad directory and the conversation, never in a repository, and Claude deletes the scratchpad files after the user approves.

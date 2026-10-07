@@ -29,6 +29,12 @@ Supported terms are `topic:`, `author:`, `repo:`, `org:`, `reason:`, `is:unread`
 
 Rules for prose a human will read: docs, PR descriptions, commit messages, comments, tickets. Claude loads the skill before writing such text, or you run `/apply-writing-rules`.
 
+### anonymize-eval-prompts
+
+Run it with `/anonymize-eval-prompts`. It turns real prompts, transcripts or Slack questions into eval cases for a skill, for example for step 2 of `claude plugin eval`. It removes private information, then rewrites each prompt with the `lossless-text-compression` skill so the prompt keeps its point but not its original wording. A script checks that no rewrite contains a removed detail or shares more than four consecutive words with its original. You approve the result before using it.
+
+Needs the `lossless-text-compression` skill installed.
+
 ## Development
 
 ```sh
