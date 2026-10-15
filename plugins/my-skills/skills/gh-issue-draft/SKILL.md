@@ -22,7 +22,7 @@ Never create or edit the issue before the user has approved the exact title and 
 
 ## 2. Write
 
-Write the body to the draft file. Follow the user's rules for issue bodies in CLAUDE.md and the `apply-writing-rules` skill, if installed. Explain each name the reader cannot look up from the issue itself, such as a template variable or an internal stack, at its first mention. Do not hard-wrap paragraphs.
+Write the body to the draft file. Load the `talk-normally-v2:talk-normally` skill before you write, and follow it. Also follow the user's rules for issue bodies in CLAUDE.md and the `apply-writing-rules` skill, if installed. Explain each name the reader cannot look up from the issue itself, such as a template variable or an internal stack, at its first mention. Do not hard-wrap paragraphs.
 
 If the `ai-tells` skill is installed, lint the title and the body with it. Fix the findings that are real, and tell the user which ones you left and why.
 
