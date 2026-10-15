@@ -35,6 +35,10 @@ Run it with `/anonymize-eval-prompts`. It turns real prompts, transcripts or Sla
 
 Needs the `lossless-text-compression` skill installed.
 
+### gh-issue-draft
+
+Claude uses it when you ask it to create or edit a GitHub issue. Claude writes the issue to a local draft, shows it to you, and publishes only the version you approve. The `issue-draft.py` script creates or edits the issue. It refuses to edit when someone changed the issue on GitHub since Claude last read it, and it checks that GitHub ended up with the approved text.
+
 ## Development
 
 ```sh

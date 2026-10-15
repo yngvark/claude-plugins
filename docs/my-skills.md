@@ -63,3 +63,15 @@ It works in two passes. Claude first replaces private details with fictional one
 `check-rewrites.py` makes the result checkable without a human reading every pair. It fails a case when a removed detail is still in the rewrite, or when the rewrite shares more than four consecutive words with its original. Four words allows common phrases and short commands but catches copied sentences. The user still approves the final list, because only they know whether a rewrite is recognizable to its author.
 
 The originals live only in the session's scratchpad directory and the conversation, never in a repository, and Claude deletes the scratchpad files after the user approves.
+
+## gh-issue-draft
+
+An issue is public to everyone who can see the repository, and the user usually reworks its wording over several rounds before it is right. The skill keeps each round in a local draft file and lets Claude publish only the version the user approved. It is model-invocable, because it should apply whenever the user asks Claude to create or edit an issue, not only when they remember to run it.
+
+`issue-draft.py` does the parts that should not depend on Claude's care:
+
+- After each `pull`, `create` and `edit`, it saves the body GitHub returned as `DRAFT.base`. `edit` compares the live body with that file first. When a teammate edited the issue in the meantime, the script stops with exit code 2 and prints the diff, so Claude merges their change instead of overwriting it.
+- After publishing, it reads the issue back and fails if GitHub's body differs from the draft.
+- It ignores line-ending and trailing-newline differences when comparing. GitHub stores bodies edited in its web UI with CRLF line endings, and `gh` adds or drops trailing newlines, so a plain comparison reports a conflict where there is none.
+
+The script calls `gh issue` subcommands rather than the REST API, so the gh-read hook that blocks direct API calls does not get in the way. `ISSUE_DRAFT_GH` points the script at another `gh` binary. The tests use it to run against a fake `gh` that keeps issues in a JSON file and returns bodies the way GitHub does.
