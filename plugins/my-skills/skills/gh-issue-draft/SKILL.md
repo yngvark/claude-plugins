@@ -22,17 +22,28 @@ Never create or edit the issue before the user has approved the exact title and 
 
 ## 2. Write
 
-Write the body to the draft file. Load the `talk-normally-v2:talk-normally` skill before you write, and follow it. Also follow the user's rules for issue bodies in CLAUDE.md and the `apply-writing-rules` skill, if installed. Explain each name the reader cannot look up from the issue itself, such as a template variable or an internal stack, at its first mention. Do not hard-wrap paragraphs.
+Before you write, load these skills and follow them:
 
-If the `ai-tells` skill is installed, lint the title and the body with it. Fix the findings that are real, and tell the user which ones you left and why.
+- `talk-normally-v2:talk-normally`
+- `apply-writing-rules`, if installed
 
-## 3. Show and wait
+Write the body to the draft file. In it:
+
+- Follow the user's rules for issue bodies in CLAUDE.md.
+- Explain each name the reader cannot look up from the issue itself, such as a template variable or an internal stack, at its first mention.
+- Do not hard-wrap paragraphs.
+
+## 3. Lint
+
+If the `ai-tells` skill is installed, lint the title and the body with it. Fix the findings that are real. Tell the user which findings you left and why.
+
+## 4. Show and wait
 
 Show the title and the full body in chat, in a fenced Markdown block. Use four backticks for the fence when the body contains a code block. You may shorten long URLs to `…` in the chat copy, but say so.
 
 Ask the user to approve. After each round of feedback, update the draft file, lint it again and show the whole new version. Publish only the version the user approved.
 
-## 4. Publish
+## 5. Publish
 
 Create a new issue:
 
