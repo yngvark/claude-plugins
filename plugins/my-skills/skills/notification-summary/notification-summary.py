@@ -16,10 +16,10 @@ does the deterministic parts:
         notifications URL or its query string, e.g.
         "topic:foo author:alice author:bob".
 
-    render NOTIFICATIONS_JSON SUMMARY_JSON [--out FILE] [--no-open]
+    render NOTIFICATIONS_JSON SUMMARY_JSON [--out FILE]
         Merge Claude's summary (highlights, sections, priorities, one-line
         reasons and summaries) with the fetched facts and write an HTML page.
-        Prints the path and opens the page in the default browser. The page builds a `gh` command that marks the ticked threads
+        Prints a file:// link to the page. The page builds a `gh` command that marks the ticked threads
         as done.
 
     done ID [ID ...]
@@ -42,7 +42,6 @@ import re
 import subprocess
 import sys
 import tempfile
-import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -532,7 +531,6 @@ def main(argv=None) -> int:
     r.add_argument("notifications")
     r.add_argument("summary")
     r.add_argument("--out", help="HTML file (default: next to NOTIFICATIONS_JSON)")
-    r.add_argument("--no-open", action="store_true", help="don't open the page in the browser")
     d = sub.add_parser("done")
     d.add_argument("ids", nargs="+", metavar="ID")
     a = p.parse_args(argv)
@@ -559,9 +557,7 @@ def main(argv=None) -> int:
     css = (Path(__file__).parent / "summary.css").read_text()
     out = Path(a.out) if a.out else Path(a.notifications).parent / "notification-summary.html"
     out.write_text(render(data, summary, css))
-    print(out)
-    if not a.no_open:
-        webbrowser.open(out.resolve().as_uri())
+    print(out.resolve().as_uri())
     return 0
 
 

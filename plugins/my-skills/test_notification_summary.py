@@ -255,27 +255,13 @@ class TestRender:
         assert "No notifications match" in h
 
 
-@pytest.fixture
-def opened(monkeypatch):
-    urls = []
-    monkeypatch.setattr(ns.webbrowser, "open", urls.append)
-    return urls
-
-
-def test_cli_render_opens_page(tmp_path, opened):
+def test_cli_render_prints_link_to_page(tmp_path, capsys):
     (tmp_path / "n.json").write_text(json.dumps(DATA))
     (tmp_path / "s.json").write_text(json.dumps(SUMMARY))
     assert ns.main(["render", str(tmp_path / "n.json"), str(tmp_path / "s.json")]) == 0
     out = tmp_path / "notification-summary.html"
     assert "--bg: #ffffff" in out.read_text() and "data-theme=dark" in out.read_text()
-    assert opened == [out.resolve().as_uri()]
-
-
-def test_cli_render_no_open(tmp_path, opened):
-    (tmp_path / "n.json").write_text(json.dumps(DATA))
-    (tmp_path / "s.json").write_text(json.dumps(SUMMARY))
-    assert ns.main(["render", str(tmp_path / "n.json"), str(tmp_path / "s.json"), "--no-open"]) == 0
-    assert opened == []
+    assert capsys.readouterr().out.strip() == out.resolve().as_uri()
 
 
 class TestTokens:

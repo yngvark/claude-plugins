@@ -63,7 +63,7 @@ Write `summary.json` next to it:
 ${CLAUDE_PLUGIN_ROOT}/skills/notification-summary/notification-summary.py render <dir>/notifications.json <dir>/summary.json
 ```
 
-The command opens the page in the default browser and prints its path; pass `--no-open` to skip that. The page follows the OS light/dark setting; `?theme=light` or `?theme=dark` overrides it.
+The command prints a `file://` link to the page. Give the user that link; don't open the page yourself, because the sandbox blocks launching the browser. The page follows the OS light/dark setting; `?theme=light` or `?theme=dark` overrides it.
 
 ## 5. Mark as done
 
