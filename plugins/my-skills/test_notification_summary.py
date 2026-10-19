@@ -135,6 +135,37 @@ class TestFetch:
         assert "not readable" in ns.status_line(bare, NOW)
         assert all(t["enriched"] for t in data["threads"] if t["number"] != 11)
 
+    def test_pr_keeps_author_when_reviews_and_checks_are_unreadable(self):
+        gh = FakeGitHub()
+
+        def get(path):
+            if "/reviews" in path or "/check-runs" in path:
+                raise RuntimeError("HTTP 403")
+            return gh(path)
+
+        data = ns.Fetcher(get=get, workers=1).fetch(ns.parse_query("reason:review-requested"), 7, NOW)
+        pr = data["threads"][0]
+        assert pr["enriched"] is True and pr["author"] == "alice"
+        assert pr["review_state"] == "unknown" and pr["ci"] == "unknown"
+        assert ns.status_line(pr, NOW).startswith("by alice")
+
+    def test_pr_falls_back_to_issues_endpoint_for_author(self):
+        """A token without pull request access still reads a PR as an issue."""
+        gh = FakeGitHub()
+
+        def get(path):
+            if "/pulls/" in path:
+                raise RuntimeError("HTTP 404")
+            if path.endswith("/issues/10"):
+                return {**gh(path), "pull_request": {"merged_at": "2026-09-21T00:00:00Z"}, "closed_at": "2026-09-21T00:00:00Z"}
+            return gh(path)
+
+        data = ns.Fetcher(get=get, workers=1).fetch(ns.parse_query("reason:review-requested"), 7, NOW)
+        pr = data["threads"][0]
+        assert pr["enriched"] is True and pr["author"] == "alice"
+        assert pr["state"] == "merged"
+        assert pr["review_state"] == "unknown" and pr["ci"] == "unknown"
+
     def test_unreadable_repo_has_no_topics(self):
         gh = FakeGitHub()
 

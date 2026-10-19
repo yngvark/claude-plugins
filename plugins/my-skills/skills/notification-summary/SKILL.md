@@ -30,7 +30,7 @@ It prints the path to `notifications.json` in a new temp dir. GitHub's notificat
 
 ## 3. Judge
 
-Read `notifications.json`. `me` is the user's login. Each thread has `reason` (`review_requested`, `mention`, `assign`, `author`, `comment`, `subscribed`, …), state, CI, review state, body and the comments since the user last read it. A thread with `"enriched": false` is in a repo the token could not read, so it has only the title, repo, reason and update time. Summarize it from those alone and say that the details were unavailable.
+Read `notifications.json`. `me` is the user's login. Each thread has `reason` (`review_requested`, `mention`, `assign`, `author`, `comment`, `subscribed`, …), state, CI, review state, body and the comments since the user last read it. A thread with `"enriched": false` is in a repo the token could not read, so it has only the title, repo, reason and update time. Summarize it from those alone and say that the details were unavailable. A PR's `ci` or `review_state` is `unknown` when the token could not read it.
 
 Write `summary.json` next to it:
 

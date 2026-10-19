@@ -219,17 +219,35 @@ class Fetcher:
         except RuntimeError:
             return bare_thread(n)
 
+    def try_get(self, path: str, default):
+        """GET path, or default when the token cannot read it."""
+        try:
+            return self.get(path) or default
+        except RuntimeError:
+            return default
+
+    def subject(self, n: dict) -> dict:
+        """The issue or PR. A token without pull request access can still read
+        a PR through the issues endpoint, which carries its author and state."""
+        s = n["subject"]
+        try:
+            return self.get(s["url"])
+        except RuntimeError:
+            if s["type"] != "PullRequest":
+                raise
+            return self.get(s["url"].replace("/pulls/", "/issues/"))
+
     def details(self, n: dict) -> dict:
         s = n["subject"]
         repo = n["repository"]["full_name"]
-        d = self.get(s["url"])
+        d = self.subject(n)
         is_pr = s["type"] == "PullRequest"
         state = d.get("state", "open")
-        if is_pr and d.get("merged_at"):
+        if is_pr and (d.get("merged_at") or (d.get("pull_request") or {}).get("merged_at")):
             state = "merged"
         num = d.get("number")
         since = n.get("last_read_at") or n["updated_at"]
-        comments = self.get(f"repos/{repo}/issues/{num}/comments?since={since}&per_page=100") or []
+        comments = self.try_get(f"repos/{repo}/issues/{num}/comments?since={since}&per_page=100", [])
         t = {
             "id": n["id"],
             "enriched": True,
@@ -257,14 +275,17 @@ class Fetcher:
             ],
         }
         if is_pr:
-            reviews = self.get(f"repos/{repo}/pulls/{num}/reviews?per_page=100") or []
-            checks = self.get(f"repos/{repo}/commits/{d['head']['sha']}/check-runs?per_page=100") or {}
+            # Reviews and checks need their own permissions; without them the
+            # thread keeps everything else and reports their state as unknown.
+            reviews = self.try_get(f"repos/{repo}/pulls/{num}/reviews?per_page=100", None)
+            sha = (d.get("head") or {}).get("sha")
+            checks = self.try_get(f"repos/{repo}/commits/{sha}/check-runs?per_page=100", None) if sha else None
             t.update({
                 "additions": d.get("additions"),
                 "deletions": d.get("deletions"),
                 "requested_reviewers": [u["login"] for u in d.get("requested_reviewers", [])],
-                "review_state": review_state(reviews),
-                "ci": ci_state(checks.get("check_runs", [])),
+                "review_state": "unknown" if reviews is None else review_state(reviews),
+                "ci": "unknown" if checks is None else ci_state(checks.get("check_runs", [])),
             })
         return t
 
