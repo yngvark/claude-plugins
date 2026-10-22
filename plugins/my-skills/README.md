@@ -39,6 +39,10 @@ Needs the `lossless-text-compression` skill installed.
 
 Claude uses it when you ask it to create or edit a GitHub issue. Claude writes the issue to a local draft, shows it to you, and publishes only the version you approve. The `issue-draft.py` script creates or edits the issue. It refuses to edit when someone changed the issue on GitHub since Claude last read it, and it checks that GitHub ended up with the approved text.
 
+### gh-pending-review
+
+Claude uses it when you ask it to create a pending review or comment on a PR. Claude shows each comment with the current code and the suggested code, and creates the pending review once you approve. You submit the review yourself on GitHub. The `pending-review.py` script checks that every comment points at a line in the PR diff, and adds the comments to your existing pending review if you have one.
+
 ## Development
 
 ```sh

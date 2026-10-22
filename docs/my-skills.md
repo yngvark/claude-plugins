@@ -77,3 +77,16 @@ An issue is public to everyone who can see the repository, and the user usually 
 - It ignores line-ending and trailing-newline differences when comparing. GitHub stores bodies edited in its web UI with CRLF line endings, and `gh` adds or drops trailing newlines, so a plain comparison reports a conflict where there is none.
 
 The script calls `gh issue` subcommands rather than the REST API, so the gh-read hook that blocks direct API calls does not get in the way. `ISSUE_DRAFT_GH` points the script at another `gh` binary. The tests use it to run against a fake `gh` that keeps issues in a JSON file and returns bodies the way GitHub does.
+
+## gh-pending-review
+
+The user often asks Claude to leave review comments on a PR, usually with a suggested change that Claude writes from the user's guidance. Before anything reaches GitHub, the user wants to see each comment next to the code it points at and the code it suggests. The skill shows that preview and, after approval, creates a pending review. A pending review is visible only to its author, so the user can still edit it and decides when to submit it.
+
+`pending-review.py` does the parts that should not depend on Claude's care:
+
+- The draft is Markdown with one `## path:line` header per comment, so Claude writes suggestion blocks without escaping them into JSON.
+- `preview` takes the commented lines from `gh pr diff`, not from the file at the PR head. GitHub accepts comments only on lines in the diff, so the same lookup both checks each comment and shows its current code. A comment outside the diff fails at preview, before anything is created.
+- GitHub allows one pending review per user and PR. `create` starts one through the REST API when the user has none. Otherwise it adds each comment to the existing review through GraphQL's `addPullRequestReviewThread`, because the REST API cannot add comments to a pending review. It refuses to replace an existing review comment.
+- `create` never sends an `event`, so GitHub keeps the review pending. Afterwards the script reads the review's comments back and fails if one is missing.
+
+Like notification-summary, the script calls the GitHub API through `gh` itself, because the gh-read hook only blocks Bash commands that do. `PENDING_REVIEW_GH` points the script at another `gh` binary, and the tests use it to run against a fake `gh`.
