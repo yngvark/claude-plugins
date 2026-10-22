@@ -51,15 +51,29 @@ def save():
     with open(state_path, "w") as f:
         json.dump(state, f)
 
-def to_rest(review_id, t):
-    return {"review_id": review_id, **t}
+def next_node_id():
+    state["comment_count"] = state.get("comment_count", 0) + 1
+    return f"C{state['comment_count']}"
 
 if args[:2] == ["pr", "diff"]:
     print(state["diff"], end="")
+elif args[:2] == ["api", "graphql"] and "updatePullRequestReviewComment" in (request := json.load(sys.stdin))["query"]:
+    v = request["variables"]
+    comment = next(c for r in state["reviews"] for c in r["comments"] if c["node_id"] == v["id"])
+    comment["body"] = v["body"]
+    save()
+    print(json.dumps({"data": {"updatePullRequestReviewComment": {"pullRequestReviewComment": {"id": v["id"]}}}}))
+elif args[:2] == ["api", "graphql"] and "reviewThreads" in request["query"]:
+    threads = [
+        {"path": c["path"], "line": c["line"], "diffSide": c["side"],
+         "comments": {"nodes": [{"id": c["node_id"], "body": c["body"], "pullRequestReview": {"id": r["node_id"]}}]}}
+        for r in state["reviews"] for c in r["comments"]
+    ]
+    print(json.dumps({"data": {"repository": {"pullRequest": {"reviewThreads": {"nodes": threads}}}}}))
 elif args[:2] == ["api", "graphql"]:
-    v = json.load(sys.stdin)["variables"]
+    v = request["variables"]
     review = next(r for r in state["reviews"] if r["node_id"] == v["reviewId"])
-    c = {"path": v["path"], "body": v["body"].replace("\\n", "\\r\\n"), "line": v["line"], "side": v["side"]}
+    c = {"node_id": next_node_id(), "path": v["path"], "body": v["body"].replace("\\n", "\\r\\n"), "line": v["line"], "side": v["side"]}
     if v["startLine"] is not None:
         c |= {"start_line": v["startLine"], "start_side": v["startSide"]}
     review["comments"].append(c)
@@ -70,7 +84,7 @@ elif args[:3] == ["api", "--method", "POST"]:
     state["posted"] = payload
     review_id = len(state["reviews"]) + 1
     review = {"id": review_id, "node_id": f"R{review_id}", "state": "COMMENTED" if "event" in payload else "PENDING",
-              "body": payload.get("body", ""), "comments": payload["comments"]}
+              "body": payload.get("body", ""), "comments": [{"node_id": next_node_id(), **c} for c in payload["comments"]]}
     state["reviews"].append(review)
     save()
     print(json.dumps({k: v for k, v in review.items() if k != "comments"}))
@@ -81,7 +95,8 @@ elif args[:3] == ["api", "--method", "PUT"]:
     print("{}")
 elif args[0] == "api" and "/comments" in args[1]:
     review_id = int(args[1].split("/reviews/")[1].split("/")[0])
-    print(json.dumps(next(r for r in state["reviews"] if r["id"] == review_id)["comments"]))
+    comments = next(r for r in state["reviews"] if r["id"] == review_id)["comments"]
+    print(json.dumps([{"path": c["path"], "body": c["body"]} for c in comments]))
 elif args[0] == "api" and "/reviews" in args[1]:
     print(json.dumps([{k: v for k, v in r.items() if k != "comments"} for r in state["reviews"]]))
 else:
@@ -271,6 +286,37 @@ def test_create_adds_nothing_when_a_line_is_outside_the_diff(tmp_path, github):
 
     assert result.returncode == 1
     assert github.state()["reviews"] == []
+
+
+def test_edit_replaces_only_the_comments_in_the_draft(tmp_path, github):
+    run("create", "o/r", "7", str(write_draft(tmp_path)))
+    draft = write_draft(tmp_path, "## config.tf:9 (old)\nWhy was [this](https://example.com) removed?\n")
+
+    result = run("edit", "o/r", "7", str(draft))
+
+    assert result.returncode == 0, result.stderr
+    assert [pr.normalize(c["body"]) for c in github.state()["reviews"][0]["comments"]] == [
+        pr.normalize(DRAFT.split("## config.tf:10\n")[1].split("## config.tf:9")[0]),
+        "Why was [this](https://example.com) removed?",
+        "Shorter, please.",
+    ]
+
+
+def test_edit_needs_a_comment_on_the_same_line(tmp_path, github):
+    run("create", "o/r", "7", str(write_draft(tmp_path)))
+
+    result = run("edit", "o/r", "7", str(write_draft(tmp_path, "## config.tf:11\nNew.\n")))
+
+    assert result.returncode == 1
+    assert "Found 0 pending comments on config.tf:11" in result.stderr
+
+
+@pytest.mark.usefixtures("github")
+def test_edit_without_a_pending_review_fails(tmp_path):
+    result = run("edit", "o/r", "7", str(write_draft(tmp_path)))
+
+    assert result.returncode == 1
+    assert "no pending review" in result.stderr
 
 
 if __name__ == "__main__":

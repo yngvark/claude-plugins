@@ -12,6 +12,7 @@
 
     pending-review.py preview REPO NUMBER DRAFT
     pending-review.py create REPO NUMBER DRAFT
+    pending-review.py edit REPO NUMBER DRAFT
 
 DRAFT is a Markdown file. Text before the first comment header is the review
 body, and may be empty. Each comment starts with a header line:
@@ -28,6 +29,9 @@ each comment with the current code and the suggested code. `create` runs the
 same check, then adds the comments to the user's pending review, or starts a
 new pending review if there is none. It never submits the review. Afterwards
 it reads the review back and exits 1 if a comment is missing.
+
+`edit` replaces the text of the comments in the user's pending review that sit
+on the same lines as the draft's comments. It leaves other comments alone.
 
 Set PENDING_REVIEW_GH to use another `gh` binary (the tests use a fake one).
 """
@@ -178,10 +182,7 @@ def create(args: argparse.Namespace) -> int:
     body, comments = parse_draft(Path(args.draft).read_text())
     commented_code(repo, number, comments)
 
-    # GitHub allows one pending review per user and PR, and shows it only to that user.
-    reviews = json.loads(gh("api", f"repos/{repo}/pulls/{number}/reviews?per_page=100"))
-    pending = next((r for r in reviews if r["state"] == "PENDING"), None)
-
+    pending = pending_review(repo, number)
     if pending is None:
         payload: dict[str, object] = {"comments": [thread_input(c) for c in comments]}
         if body:
@@ -202,6 +203,75 @@ def create(args: argparse.Namespace) -> int:
     return 0
 
 
+def edit(args: argparse.Namespace) -> int:
+    repo, number = args.repo, args.number
+    _, comments = parse_draft(Path(args.draft).read_text())
+    commented_code(repo, number, comments)
+    pending = pending_review(repo, number)
+    if pending is None:
+        sys.exit("You have no pending review on this PR. Use `create`.")
+
+    live = pending_comments(repo, number, pending["node_id"])
+    targets = []
+    for c in comments:
+        match = [x for x in live if (x["path"], x["line"], x["side"]) == (c.path, c.end, c.side)]
+        if len(match) != 1:
+            sys.exit(f"Found {len(match)} pending comments on {c.location}, so the script cannot tell which one to edit.")
+        if normalize(match[0]["body"]) != normalize(c.body):
+            targets.append((match[0]["node_id"], c))
+
+    for node_id, c in targets:
+        graphql(
+            "mutation($id: ID!, $body: String!) { updatePullRequestReviewComment(input: {pullRequestReviewCommentId: $id, body: $body}) { pullRequestReviewComment { id } } }",
+            {"id": node_id, "body": c.body},
+            f"edit the comment on {c.location}",
+        )
+
+    verify(repo, number, pending["id"], comments)
+    print(f"https://github.com/{repo}/pull/{number}/files")
+    return 0
+
+
+def pending_review(repo: str, number: str) -> dict | None:
+    # GitHub allows one pending review per user and PR, and shows it only to that user.
+    reviews = json.loads(gh("api", f"repos/{repo}/pulls/{number}/reviews?per_page=100"))
+    return next((r for r in reviews if r["state"] == "PENDING"), None)
+
+
+def review_comments(repo: str, number: str, review_id: int) -> list[dict]:
+    return json.loads(gh("api", f"repos/{repo}/pulls/{number}/reviews/{review_id}/comments?per_page=100"))
+
+
+def pending_comments(repo: str, number: str, review_node_id: str) -> list[dict]:
+    """Return the comments in the pending review with their lines, which the REST API leaves out for pending comments."""
+    owner, name = repo.split("/", 1)
+    query = """
+query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100) {
+        nodes { path line diffSide comments(first: 100) { nodes { id body pullRequestReview { id } } } }
+      }
+    }
+  }
+}"""
+    data = graphql(query, {"owner": owner, "name": name, "number": int(number)}, "list the review comments")
+    return [
+        {"node_id": c["id"], "path": t["path"], "line": t["line"], "side": t["diffSide"], "body": c["body"]}
+        for t in data["repository"]["pullRequest"]["reviewThreads"]["nodes"]
+        for c in t["comments"]["nodes"]
+        if c["pullRequestReview"]["id"] == review_node_id
+    ]
+
+
+def graphql(query: str, variables: dict, action: str) -> dict:
+    result = json.loads(gh("api", "graphql", "--input", "-", stdin=json.dumps({"query": query, "variables": variables})))
+    data = result.get("data") or {}
+    if result.get("errors") or not data or not all(data.values()):
+        sys.exit(f"GitHub did not {action}:\n{json.dumps(result.get('errors'), indent=2)}")
+    return data
+
+
 def add_thread(review_node_id: str, c: Comment) -> None:
     fields = thread_input(c)
     variables = {
@@ -219,14 +289,11 @@ mutation($reviewId: ID!, $path: String!, $body: String!, $line: Int!, $side: Dif
     thread { id }
   }
 }"""
-    result = json.loads(gh("api", "graphql", "--input", "-", stdin=json.dumps({"query": query, "variables": variables})))
-    if result.get("errors") or not (result.get("data") or {}).get("addPullRequestReviewThread"):
-        sys.exit(f"GitHub did not add the comment on {c.location}:\n{json.dumps(result.get('errors'), indent=2)}")
+    graphql(query, variables, f"add the comment on {c.location}")
 
 
 def verify(repo: str, number: str, review_id: int, comments: list[Comment]) -> None:
-    live = json.loads(gh("api", f"repos/{repo}/pulls/{number}/reviews/{review_id}/comments?per_page=100"))
-    found = {(x["path"], normalize(x["body"])) for x in live}
+    found = {(x["path"], normalize(x["body"])) for x in review_comments(repo, number, review_id)}
     missing = [c.location for c in comments if (c.path, normalize(c.body)) not in found]
     if missing:
         sys.exit("The pending review lacks the comments on: " + ", ".join(missing))
@@ -238,6 +305,7 @@ def main(argv: list[str]) -> int:
     for name, func, help_text in [
         ("preview", preview, "print each comment with the current code and the suggested code"),
         ("create", create, "add the draft's comments to your pending review on the PR"),
+        ("edit", edit, "replace the text of your pending comments on the draft's lines"),
     ]:
         p = sub.add_parser(name, help=help_text)
         p.add_argument("repo")

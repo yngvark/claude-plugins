@@ -33,6 +33,7 @@ A comment on line 9 of the old version, such as a removed line.
 - Keep the user's wording. Write in their language and tone when you fill a gap, such as a `TODO` or "find examples".
 - When a comment asks for a code change, add a `suggestion` block with the new version of the commented lines. Write it from the user's guidance, and check it against the code.
 - Check every fact in a comment, such as "we use X elsewhere", against the repository.
+- Link every file you mention in a comment, so the reader can click it. Use a permalink to the commit SHA of the default branch, with the line number: `` [`app/config.tf`](https://github.com/OWNER/REPO/blob/SHA/app/config.tf#L80) ``.
 
 ## 2. Preview and wait
 
@@ -53,3 +54,11 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-pending-review/pending-review.py create OWNER/RE
 ```
 
 The script adds the comments to the user's pending review on the PR, or starts one. It never submits the review. Reply with one line and the link it prints.
+
+## 4. Change a comment after creating it
+
+Update the draft, show the preview again and wait for approval. Then run `edit` with a draft that holds only the changed comments, on the same lines as before:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/gh-pending-review/pending-review.py edit OWNER/REPO NUMBER DRAFT
+```
