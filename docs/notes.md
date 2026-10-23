@@ -19,8 +19,9 @@ here depends on Obsidian) as a "second brain". Four recurring needs:
    Claude, by Obsidian's "new note", by hand) arrive with no date and sort into
    an alphabetical clump at the bottom, losing their place in time.
 
-The plugin ships four skills — `/note`, `/read-note`,
-`/daily-notes-add-title`, and `/add-date-prefix` — that cover these.
+The plugin ships three skills that cover these. `/note` handles both capture
+and recall; `/daily-notes-add-title` and `/add-date-prefix` handle the other
+two.
 The two renaming skills are slash-only, so Claude never renames notes in bulk
 unless the user starts it.
 
@@ -44,13 +45,14 @@ one of the two needs Claude's judgement per file.
   team.md`). The date prefix is always preserved; only a title is appended.
   `/note` follows the same format: `note-path` prefixes today's date, so new
   notes never need `/add-date-prefix`.
-- **Capture and recall are separate skills.** `/note` only writes; `/read-note`
-  only reads. Bundling them invited a specific failure: given `See Foo.md — I
-  want to continue that`, a write-only `/note` skill dutifully saved a new note
-  whose entire body was a pointer to `Foo.md`, which is the opposite of what was
-  wanted. Both skills now name that case explicitly and hand off to each other,
-  and `/read-note` is documented as read-only so recall can never mutate the
-  vault.
+- **One skill decides between capture and recall.** The user should not have
+  to remember which of two commands to type, so `/note` reads the request and
+  picks. A reference to a note that already exists (a file name, "my note about
+  Y", `See Foo.md — I want to continue that`) means read; new content means
+  write. The skill names the `See Foo.md` case explicitly, because a literal
+  reading saves a new note whose body is only a pointer to `Foo.md`. When the
+  request is genuinely ambiguous, the skill asks before writing. The read path
+  never edits, renames or moves a note.
 - **Three lookup modes, no index.** `find` matches file names, `search` matches
   file contents, `recent` sorts by mtime — all plain `rglob` over the vault, no
   cache or index to invalidate. A personal vault is small enough that a full
@@ -110,7 +112,6 @@ plugins/notes/
   .claude-plugin/plugin.json
   scripts/notes.py                        # shared, tested filesystem helper
   skills/note/SKILL.md
-  skills/read-note/SKILL.md
   skills/daily-notes-add-title/SKILL.md
   skills/add-date-prefix/SKILL.md
   test_notes.py                           # pytest over notes.py (via uv)

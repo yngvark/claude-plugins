@@ -1,14 +1,13 @@
 # notes
 
 A small "second brain" for a plain Markdown notes folder (e.g. an Obsidian
-vault). Four skills:
+vault). Three skills:
 
 - **`/note`** — jot a quick thought, idea, or reminder into the notes folder as
-  a new Markdown file (one note per file). You can pass the text directly, or
-  ask Claude to capture something from the conversation.
-- **`/read-note`** — find and read a note you already have, by file name, by a
-  topic in its body, or just "my last note". Use it to pick up work described in
-  an earlier note. Read-only.
+  a new Markdown file (one note per file), or find and read a note you already
+  have, by file name, by a topic in its body, or just "my last note". Claude
+  tells from your wording which one you want: `/note buy milk` writes a note,
+  `/note see Handoff.md, I want to continue` reads one.
 - **`/daily-notes-add-title`** — find daily notes named just by date
   (`2026-07-01.md`) and rename them to include a descriptive title based on
   their contents (`2026-07-01 Meeting with team.md`). The date prefix is always
