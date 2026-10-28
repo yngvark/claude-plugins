@@ -43,6 +43,10 @@ Claude uses it when you ask it to create or edit a GitHub issue. Claude writes t
 
 Claude uses it when you ask it to create a pending review or comment on a PR. Claude shows each comment with the current code and the suggested code, and creates the pending review once you approve. You submit the review yourself on GitHub. The `pending-review.py` script checks that every comment points at a line in the PR diff, and adds the comments to your existing pending review if you have one.
 
+### google-docs-clipboard
+
+Claude uses it when you share a section of a Google Doc and want it rewritten. Copy the section in Google Docs, and Claude reads it from the clipboard with its links and heading levels. Claude then puts its edited version back on the clipboard, ready to paste into Google Docs with headings, lists, links and code intact. Needs macOS.
+
 ## Development
 
 ```sh

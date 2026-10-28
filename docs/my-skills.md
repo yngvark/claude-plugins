@@ -91,3 +91,18 @@ The user often asks Claude to leave review comments on a PR, usually with a sugg
 - `edit` changes the text of pending comments. It finds each comment by its path, line and side, which it reads through GraphQL's review threads, because the REST API returns pending comments without a line.
 
 Like notification-summary, the script calls the GitHub API through `gh` itself, because the gh-read hook only blocks Bash commands that do. `PENDING_REVIEW_GH` points the script at another `gh` binary, and the tests use it to run against a fake `gh`.
+
+## google-docs-clipboard
+
+Claude cannot open the user's Google Docs, so the user copies a section into the conversation and pastes Claude's version back. Text pasted into chat has lost its links, heading levels and colors, and an edit based on it silently drops them. Plain text pasted into Google Docs also loses all structure.
+
+Google Docs reads and writes HTML on the macOS clipboard. `docs-clipboard.py read` turns that HTML into Markdown, so Claude edits a format it knows and sees every link. `write` turns the Markdown draft back into HTML and puts it on the clipboard next to a plain-text version. The script reads and writes the clipboard through `osascript`, because `pbcopy` cannot set HTML.
+
+The HTML follows some Google Docs conventions so it pastes correctly:
+
+- Headings carry the size and color of Docs' default named styles, so they look right before the user reapplies a style.
+- A second `<p>` inside an `<li>` pastes as a separate list item. The script therefore joins the paragraphs and code lines of one item with `<br>`.
+- Google Docs collapses runs of spaces, so leading spaces in code become `&nbsp;`.
+- Nested lists sit next to their parent's items inside the outer list, the way Docs copies them.
+
+The script supports only the Markdown that runbooks and similar documents need: headings, paragraphs, nested lists, code, bold and links. One test converts a draft to HTML and back and checks that nothing changed. Another reads HTML shaped like Docs' clipboard output. Both use made-up text, because the user's documents are internal.

@@ -5,3 +5,4 @@ test:
 	uv run --script test_anonymize_eval_prompts.py
 	uv run --script test_gh_issue_draft.py
 	uv run --script test_gh_pending_review.py
+	uv run --script test_google_docs_clipboard.py
