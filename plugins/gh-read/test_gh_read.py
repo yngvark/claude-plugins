@@ -86,6 +86,15 @@ class TestPathAllowed:
             "repos/owner/repo/branches/main/protection/required_status_checks"
         )
 
+    def test_teams(self):
+        assert is_path_allowed("repos/owner/repo/teams")
+
+    def test_collaborators(self):
+        assert is_path_allowed("repos/owner/repo/collaborators")
+
+    def test_collaborator_permission(self):
+        assert is_path_allowed("repos/owner/repo/collaborators/someone/permission")
+
     def test_git_refs(self):
         assert is_path_allowed("repos/owner/repo/git/refs")
 

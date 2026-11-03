@@ -47,6 +47,11 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/compare/main...
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/branches
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/branches/main/protection
 
+# Who has access: teams, collaborators, one user's permission level
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/teams
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'repos/OWNER/REPO/collaborators?affiliation=direct'
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/collaborators/USERNAME/permission
+
 # List releases
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/releases
 
@@ -74,7 +79,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/notifications
 
 ## Allowed paths
 
-- `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches`, `notifications`, `properties/values` (plus any sub-paths).
+- `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches`, `notifications`, `teams`, `collaborators`, `properties/values` (plus any sub-paths).
 - `orgs/{org}/properties/schema` and `orgs/{org}/properties/values` (custom properties).
 - `search/{type}` where `{type}` is one of: `issues`, `repositories`, `code`, `commits`, `users`, `labels`, `topics`.
 - `notifications` and `notifications/threads/{id}` (plus any sub-paths).
