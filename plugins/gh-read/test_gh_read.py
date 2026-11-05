@@ -110,6 +110,12 @@ class TestPathAllowed:
     def test_environment_branch_policies(self):
         assert is_path_allowed("repos/owner/repo/environments/prod/deployment-branch-policies")
 
+    def test_deployments_filtered_by_environment(self):
+        assert is_path_allowed("repos/owner/repo/deployments?environment=prod")
+
+    def test_deployment_statuses(self):
+        assert is_path_allowed("repos/owner/repo/deployments/123/statuses")
+
     def test_git_refs(self):
         assert is_path_allowed("repos/owner/repo/git/refs")
 
@@ -163,8 +169,8 @@ class TestPathAllowed:
     def test_reject_repos_owner_repo(self):
         assert not is_path_allowed("repos/owner/repo")
 
-    def test_reject_deployments(self):
-        assert not is_path_allowed("repos/owner/repo/deployments")
+    def test_reject_invitations(self):
+        assert not is_path_allowed("repos/owner/repo/invitations")
 
     def test_reject_hooks(self):
         assert not is_path_allowed("repos/owner/repo/hooks")

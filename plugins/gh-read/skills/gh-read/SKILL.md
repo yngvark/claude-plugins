@@ -62,6 +62,10 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/environments
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/environments/ENV_NAME
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/environments/ENV_NAME/deployment-branch-policies
 
+# Deployments: latest deploys to one environment, one deployment's statuses
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'repos/OWNER/REPO/deployments?environment=ENV_NAME&per_page=5'
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/deployments/DEPLOYMENT_ID/statuses
+
 # List releases
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/releases
 
@@ -89,7 +93,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/notifications
 
 ## Allowed paths
 
-- `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches`, `notifications`, `teams`, `collaborators`, `rules`, `rulesets`, `environments`, `properties/values` (plus any sub-paths).
+- `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches`, `notifications`, `teams`, `collaborators`, `rules`, `rulesets`, `environments`, `deployments`, `properties/values` (plus any sub-paths).
 - `orgs/{org}/properties/schema` and `orgs/{org}/properties/values` (custom properties).
 - `search/{type}` where `{type}` is one of: `issues`, `repositories`, `code`, `commits`, `users`, `labels`, `topics`.
 - `notifications` and `notifications/threads/{id}` (plus any sub-paths).
