@@ -23,6 +23,8 @@ ALLOWED_RESOURCES = {
     "notifications",
     "teams",
     "collaborators",
+    "rules",
+    "rulesets",
 }
 
 # Allowed fourth-level resources under repos/{owner}/{repo}/{group}/{sub}
@@ -107,7 +109,7 @@ USAGE = """Usage: gh-read.py <api-path> [flags...]
 Read-only GitHub API proxy. Forces GET and rejects paths/flags outside the allowlists.
 
 Allowed path patterns:
-  repos/{owner}/{repo}/{issues,pulls,commits,contents,compare,releases,comments,branches,notifications,teams,collaborators}[/...]
+  repos/{owner}/{repo}/{issues,pulls,commits,contents,compare,releases,comments,branches,notifications,teams,collaborators,rules,rulesets}[/...]
   repos/{owner}/{repo}/git/refs[/...]
   repos/{owner}/{repo}/actions/{runs,workflows}[/...]
   repos/{owner}/{repo}/properties/values
@@ -183,7 +185,7 @@ def main() -> None:
     if not is_path_allowed(api_path):
         print(f"REJECTED: path '{api_path}' is not in the read-safe allowlist.", file=sys.stderr)
         print("Allowed patterns:", file=sys.stderr)
-        print("  repos/{owner}/{repo}/{issues,pulls,commits,git/refs,actions/runs,actions/workflows,contents,compare,releases,comments,branches,notifications,teams,collaborators,properties/values}", file=sys.stderr)
+        print("  repos/{owner}/{repo}/{issues,pulls,commits,git/refs,actions/runs,actions/workflows,contents,compare,releases,comments,branches,notifications,teams,collaborators,rules,rulesets,properties/values}", file=sys.stderr)
         print("  orgs/{org}/properties/{schema,values}", file=sys.stderr)
         print("  search/{issues,repositories,code,commits,users,labels,topics}", file=sys.stderr)
         print("  notifications, notifications/threads/{id}", file=sys.stderr)

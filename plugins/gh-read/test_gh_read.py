@@ -95,6 +95,15 @@ class TestPathAllowed:
     def test_collaborator_permission(self):
         assert is_path_allowed("repos/owner/repo/collaborators/someone/permission")
 
+    def test_rules_for_branch(self):
+        assert is_path_allowed("repos/owner/repo/rules/branches/main")
+
+    def test_rulesets(self):
+        assert is_path_allowed("repos/owner/repo/rulesets")
+
+    def test_ruleset_with_id(self):
+        assert is_path_allowed("repos/owner/repo/rulesets/42")
+
     def test_git_refs(self):
         assert is_path_allowed("repos/owner/repo/git/refs")
 
