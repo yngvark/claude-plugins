@@ -104,6 +104,12 @@ class TestPathAllowed:
     def test_ruleset_with_id(self):
         assert is_path_allowed("repos/owner/repo/rulesets/42")
 
+    def test_environments(self):
+        assert is_path_allowed("repos/owner/repo/environments")
+
+    def test_environment_branch_policies(self):
+        assert is_path_allowed("repos/owner/repo/environments/prod/deployment-branch-policies")
+
     def test_git_refs(self):
         assert is_path_allowed("repos/owner/repo/git/refs")
 
