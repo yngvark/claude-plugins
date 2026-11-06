@@ -143,6 +143,12 @@ class TestPathAllowed:
     def test_org_properties_values(self):
         assert is_path_allowed("orgs/myorg/properties/values")
 
+    def test_org_packages_filtered_by_type(self):
+        assert is_path_allowed("orgs/myorg/packages?package_type=container")
+
+    def test_org_container_package_versions(self):
+        assert is_path_allowed("orgs/myorg/packages/container/my-image/versions")
+
     def test_query_string_on_resource(self):
         assert is_path_allowed("repos/owner/repo/pulls?state=closed")
 
@@ -192,6 +198,9 @@ class TestPathAllowed:
 
     def test_reject_org_properties_bare(self):
         assert not is_path_allowed("orgs/myorg/properties")
+
+    def test_reject_org_packages_empty_name(self):
+        assert not is_path_allowed("orgs//packages")
 
     def test_reject_org_empty_name(self):
         assert not is_path_allowed("orgs//properties/schema")
