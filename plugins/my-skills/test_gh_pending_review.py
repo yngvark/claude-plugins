@@ -179,7 +179,7 @@ def test_parse_diff_maps_both_sides():
 
 
 @pytest.mark.usefixtures("github")
-def test_preview_shows_current_and_suggested_code(tmp_path):
+def test_preview_shows_comments_the_way_github_does(tmp_path):
     result = run("preview", "o/r", "7", str(write_draft(tmp_path)))
 
     assert result.returncode == 0, result.stderr
@@ -190,40 +190,68 @@ Ser bra ut.
 
 **1. `config.tf:10`**
 
-Now:
+Use `additional`, like the other templates:
 
-```
-    Foo = "bar"
-```
+**Suggested change**
 
-Suggested:
-
+```diff
+-     Foo = "bar"
++   additional_parameters = {
 ```
-  additional_parameters = {
-```
-
-> Use `additional`, like the other templates:
 
 **2. `config.tf:9 (old)`**
 
-Now:
+Why was this removed?
 
 ```
   extra = {}
 ```
 
-> Why was this removed?
-
 **3. `README.md:1-2`**
 
-Now:
+Shorter, please.
 
 ````
 # App
 Uses ```code``` here.
 ````
+"""
 
-> Shorter, please.
+
+@pytest.mark.usefixtures("github")
+def test_preview_shows_a_multiline_suggestion_as_a_diff_after_the_text(tmp_path):
+    draft = write_draft(tmp_path, """\
+## README.md:1-2
+First paragraph.
+
+Second paragraph.
+
+```suggestion
+# App
+
+Short.
+```
+""")
+
+    result = run("preview", "o/r", "7", str(draft))
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == """\
+**1. `README.md:1-2`**
+
+First paragraph.
+
+Second paragraph.
+
+**Suggested change**
+
+````diff
+- # App
+- Uses ```code``` here.
++ # App
++
++ Short.
+````
 """
 
 

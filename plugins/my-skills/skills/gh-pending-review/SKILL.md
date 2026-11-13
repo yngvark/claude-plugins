@@ -43,7 +43,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-pending-review/pending-review.py preview OWNER/R
 
 The script fails when a comment points at a line outside the PR diff, because GitHub rejects those. Move the comment to a line in the diff.
 
-Show the output in chat exactly as printed. For each comment, it shows the current code ("Now"), the suggested code and the comment text. Then ask the user to approve. After feedback, update the draft and show the whole preview again.
+Show the output in chat exactly as printed. It shows each comment the way GitHub does: the comment text first, then each suggestion as a "Suggested change" diff, with the current lines marked `-` and the new lines marked `+`. A comment without a suggestion ends with the lines it comments on. Then ask the user to approve. After feedback, update the draft and show the whole preview again.
 
 ## 3. Create
 

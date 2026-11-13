@@ -86,6 +86,7 @@ The user often asks Claude to leave review comments on a PR, usually with a sugg
 
 - The draft is Markdown with one `## path:line` header per comment, so Claude writes suggestion blocks without escaping them into JSON.
 - `preview` takes the commented lines from `gh pr diff`, not from the file at the PR head. GitHub accepts comments only on lines in the diff, so the same lookup both checks each comment and shows its current code. A comment outside the diff fails at preview, before anything is created.
+- `preview` prints each comment in the order GitHub renders it: the comment text, then each suggestion as a "Suggested change" diff from the current lines. A comment without a suggestion ends with the lines it points at. The script does the formatting, so Claude shows the output as printed and the user sees what GitHub will show.
 - GitHub allows one pending review per user and PR. `create` starts one through the REST API when the user has none. Otherwise it adds each comment to the existing review through GraphQL's `addPullRequestReviewThread`, because the REST API cannot add comments to a pending review. It refuses to replace an existing review comment.
 - `create` never sends an `event`, so GitHub keeps the review pending. Afterwards the script reads the review's comments back and fails if one is missing.
 - `edit` changes the text of pending comments. It finds each comment by its path, line and side, which it reads through GraphQL's review threads, because the REST API returns pending comments without a line.

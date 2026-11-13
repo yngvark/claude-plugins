@@ -25,7 +25,9 @@ The comment text follows its header. A ```suggestion block in it holds the
 new version of the commented lines.
 
 `preview` checks that every commented line is part of the PR diff, and prints
-each comment with the current code and the suggested code. `create` runs the
+each comment the way GitHub shows it: the comment text, then each suggestion
+as a "Suggested change" diff from the current lines. A comment without a
+suggestion ends with the commented lines. `create` runs the
 same check, then adds the comments to the user's pending review, or starts a
 new pending review if there is none. It never submits the review. Afterwards
 it reads the review back and exits 1 if a comment is missing.
@@ -146,10 +148,33 @@ def commented_code(repo: str, number: str, comments: list[Comment]) -> list[str]
     return code
 
 
-def fenced(text: str) -> str:
+def fenced(text: str, lang: str = "") -> str:
     longest = max((len(run) for run in re.findall(r"`+", text)), default=0)
     fence = "`" * max(3, longest + 1)
-    return f"{fence}\n{text}\n{fence}"
+    return f"{fence}{lang}\n{text}\n{fence}"
+
+
+def suggested_change(now: str, suggestion: str) -> str:
+    """Show a suggestion the way GitHub does: a "Suggested change" box with a diff from the current lines."""
+    lines = [f"- {line}".rstrip() for line in now.split("\n")]
+    lines += [f"+ {line}".rstrip() for line in suggestion.split("\n")]
+    return f"**Suggested change**\n\n{fenced(chr(10).join(lines), 'diff')}"
+
+
+def rendered_comment(body: str, now: str) -> list[str]:
+    """Return the comment's parts in the order GitHub shows them: text, with each suggestion as a diff where it stands.
+
+    A comment without a suggestion ends with the commented lines, so the reader sees what it refers to.
+    """
+    parts, pos = [], 0
+    for s in SUGGESTION.finditer(body):
+        parts.append(body[pos : s.start()].strip())
+        parts.append(suggested_change(now, s["code"].rstrip("\n")))
+        pos = s.end()
+    parts.append(body[pos:].strip())
+    if pos == 0:
+        parts.append(fenced(now))
+    return [p for p in parts if p]
 
 
 def preview(args: argparse.Namespace) -> int:
@@ -160,12 +185,7 @@ def preview(args: argparse.Namespace) -> int:
         out.append(f"**Review comment**\n\n{body}")
     for i, (c, now) in enumerate(zip(comments, code), 1):
         out.append(f"**{i}. `{c.location}`**")
-        out.append(f"Now:\n\n{fenced(now)}")
-        for s in SUGGESTION.finditer(c.body):
-            out.append(f"Suggested:\n\n{fenced(s['code'].rstrip(chr(10)))}")
-        text = SUGGESTION.sub("", c.body).strip()
-        if text:
-            out.append("\n".join("> " + line if line else ">" for line in text.splitlines()))
+        out.extend(rendered_comment(c.body, now))
     print("\n\n".join(out))
     return 0
 
@@ -303,7 +323,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     for name, func, help_text in [
-        ("preview", preview, "print each comment with the current code and the suggested code"),
+        ("preview", preview, "print each comment the way GitHub shows it"),
         ("create", create, "add the draft's comments to your pending review on the PR"),
         ("edit", edit, "replace the text of your pending comments on the draft's lines"),
     ]:
