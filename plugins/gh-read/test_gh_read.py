@@ -116,6 +116,12 @@ class TestPathAllowed:
     def test_deployment_statuses(self):
         assert is_path_allowed("repos/owner/repo/deployments/123/statuses")
 
+    def test_dependabot_alerts_filtered_by_state(self):
+        assert is_path_allowed("repos/owner/repo/dependabot/alerts?state=open")
+
+    def test_dependabot_alert(self):
+        assert is_path_allowed("repos/owner/repo/dependabot/alerts/7")
+
     def test_git_refs(self):
         assert is_path_allowed("repos/owner/repo/git/refs")
 
@@ -213,6 +219,9 @@ class TestPathAllowed:
 
     def test_reject_git_trees(self):
         assert not is_path_allowed("repos/owner/repo/git/trees")
+
+    def test_reject_dependabot_secrets(self):
+        assert not is_path_allowed("repos/owner/repo/dependabot/secrets")
 
     def test_reject_actions_secrets(self):
         assert not is_path_allowed("repos/owner/repo/actions/secrets")

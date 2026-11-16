@@ -66,6 +66,10 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/environments/EN
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'repos/OWNER/REPO/deployments?environment=ENV_NAME&per_page=5'
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/deployments/DEPLOYMENT_ID/statuses
 
+# Dependabot alerts: open alerts, one alert
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'repos/OWNER/REPO/dependabot/alerts?state=open'
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/dependabot/alerts/ALERT_NUMBER
+
 # List releases
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/releases
 
@@ -97,7 +101,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/notifications
 
 ## Allowed paths
 
-- `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches`, `notifications`, `teams`, `collaborators`, `rules`, `rulesets`, `environments`, `deployments`, `properties/values` (plus any sub-paths).
+- `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches`, `notifications`, `teams`, `collaborators`, `rules`, `rulesets`, `environments`, `deployments`, `properties/values`, `dependabot/alerts` (plus any sub-paths).
 - `orgs/{org}/packages` (plus any sub-paths), for package and package version metadata.
 - `orgs/{org}/properties/schema` and `orgs/{org}/properties/values` (custom properties).
 - `search/{type}` where `{type}` is one of: `issues`, `repositories`, `code`, `commits`, `users`, `labels`, `topics`.
