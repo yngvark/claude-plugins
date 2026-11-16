@@ -47,6 +47,12 @@ Claude uses it when you ask it to create a pending review or comment on a PR. Cl
 
 Claude uses it when you share a section of a Google Doc and want it rewritten. Copy the section in Google Docs, and Claude reads it from the clipboard with its links and heading levels. Claude then puts its edited version back on the clipboard, ready to paste into Google Docs with headings, lists, links and code intact. Needs macOS.
 
+### sync
+
+Run it with `/sync`; Claude does not start it on its own. It reads a note called "Sync document" through the `notes` plugin. Each `##` section of the note describes something that must be set up on all your machines, with a command that checks it and a command that installs it. Claude runs each check, runs the install commands for the sections that fail, and reports the result in a table. Pass a section name to sync only that section.
+
+Needs the `notes` plugin installed.
+
 ## Development
 
 ```sh

@@ -2,7 +2,7 @@
 
 `my-skills` holds skills that have nothing in common except that the user finds them useful. Each new skill goes here instead of into its own plugin, so consumers install once and get new skills on update. A skill moves to its own plugin only if it grows hooks, settings or enough surface to deserve a separate install.
 
-notification-summary and anonymize-eval-prompts are slash-only. Each runs only when the user asks for it explicitly, and keeping them out of Claude's skill list keeps their descriptions out of every session's context.
+notification-summary, anonymize-eval-prompts and sync are slash-only. Each runs only when the user asks for it explicitly, and keeping them out of Claude's skill list keeps their descriptions out of every session's context.
 
 ## notification-summary
 
@@ -107,3 +107,13 @@ The HTML follows some Google Docs conventions so it pastes correctly:
 - Nested lists sit next to their parent's items inside the outer list, the way Docs copies them.
 
 The script supports only the Markdown that runbooks and similar documents need: headings, paragraphs, nested lists, code, bold and links. One test converts a draft to HTML and back and checks that nothing changed. Another reads HTML shaped like Docs' clipboard output. Both use made-up text, because the user's documents are internal.
+
+## sync
+
+The user works on more than one Mac. Some setup does not sync between them, such as plugin installs, files under `~/.claude/` that settings point at, and app preferences. The user keeps a note, "Sync document", with one section per item. Each section holds a check command and an install command. The note works like an idempotent script that Claude runs: anything missing gets installed, and a second run changes nothing.
+
+The skill exists so the user can type `/sync` instead of remembering the note's file name. It finds the note through the `notes:note` skill rather than with a path of its own, so the notes folder location stays in one place. The note's file name starts with a date, so the skill looks it up by title.
+
+The target state lives in the note, not in this repo. The note names private tools, tokens and paths, and this repo is public. The user also edits the note more often than they release the plugin.
+
+Running `/sync` counts as permission to run the install commands written in the note. Claude asks before removing anything or running a command the note does not contain, because those go beyond what the user wrote down. Some steps can't run inside the sandbox or need a token created by hand, so Claude hands those to the user.
