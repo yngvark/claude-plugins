@@ -140,6 +140,9 @@ class TestPathAllowed:
     def test_repo_properties_values(self):
         assert is_path_allowed("repos/owner/repo/properties/values")
 
+    def test_org(self):
+        assert is_path_allowed("orgs/myorg")
+
     def test_org_properties_schema(self):
         assert is_path_allowed("orgs/myorg/properties/schema")
 
@@ -204,6 +207,9 @@ class TestPathAllowed:
 
     def test_reject_org_properties_bare(self):
         assert not is_path_allowed("orgs/myorg/properties")
+
+    def test_reject_just_orgs(self):
+        assert not is_path_allowed("orgs")
 
     def test_reject_org_packages_empty_name(self):
         assert not is_path_allowed("orgs//packages")

@@ -74,10 +74,12 @@ def is_path_allowed(path: str) -> bool:
     # search/{type}
     if parts[0] == "search":
         return len(parts) == 2 and parts[1] in ALLOWED_SEARCH_TYPES
-    # orgs/{org}/{resource}[/...]  |  orgs/{org}/{group}/{sub}[/...]
+    # orgs/{org}  |  orgs/{org}/{resource}[/...]  |  orgs/{org}/{group}/{sub}[/...]
     if parts[0] == "orgs":
-        if len(parts) < 3 or not parts[1]:
+        if len(parts) < 2 or not parts[1]:
             return False
+        if len(parts) == 2:
+            return True
         if parts[2] in ALLOWED_ORG_RESOURCES:
             return True
         return len(parts) >= 4 and (parts[2], parts[3]) in ALLOWED_ORG_NESTED_RESOURCES
@@ -122,6 +124,7 @@ Allowed path patterns:
   repos/{owner}/{repo}/actions/{runs,workflows}[/...]
   repos/{owner}/{repo}/properties/values
   repos/{owner}/{repo}/dependabot/alerts[/...]
+  orgs/{org}
   orgs/{org}/packages[/...]
   orgs/{org}/properties/{schema,values}[/...]
   search/{issues,repositories,code,commits,users,labels,topics}
@@ -196,7 +199,7 @@ def main() -> None:
         print(f"REJECTED: path '{api_path}' is not in the read-safe allowlist.", file=sys.stderr)
         print("Allowed patterns:", file=sys.stderr)
         print("  repos/{owner}/{repo}/{issues,pulls,commits,git/refs,actions/runs,actions/workflows,contents,compare,releases,comments,branches,notifications,teams,collaborators,rules,rulesets,environments,deployments,properties/values,dependabot/alerts}", file=sys.stderr)
-        print("  orgs/{org}/packages[/...], orgs/{org}/properties/{schema,values}", file=sys.stderr)
+        print("  orgs/{org}, orgs/{org}/packages[/...], orgs/{org}/properties/{schema,values}", file=sys.stderr)
         print("  search/{issues,repositories,code,commits,users,labels,topics}", file=sys.stderr)
         print("  notifications, notifications/threads/{id}", file=sys.stderr)
         sys.exit(1)

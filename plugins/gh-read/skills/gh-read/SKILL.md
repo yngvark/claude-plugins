@@ -84,6 +84,9 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/properties/valu
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py orgs/ORG/properties/schema
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py orgs/ORG/properties/values
 
+# Org settings (e.g. .default_repository_permission)
+${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py orgs/ORG
+
 # Org packages: list container images, one image's versions (tags in .metadata.container.tags)
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py 'orgs/ORG/packages?package_type=container'
 ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py orgs/ORG/packages/container/PACKAGE_NAME/versions
@@ -102,6 +105,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/gh-read/gh-read.py repos/OWNER/REPO/notifications
 ## Allowed paths
 
 - `repos/{owner}/{repo}/` followed by: `issues`, `pulls`, `commits`, `git/refs`, `actions/runs`, `actions/workflows`, `contents`, `compare`, `releases`, `comments`, `branches`, `notifications`, `teams`, `collaborators`, `rules`, `rulesets`, `environments`, `deployments`, `properties/values`, `dependabot/alerts` (plus any sub-paths).
+- `orgs/{org}` (no sub-paths), for the org's profile and settings.
 - `orgs/{org}/packages` (plus any sub-paths), for package and package version metadata.
 - `orgs/{org}/properties/schema` and `orgs/{org}/properties/values` (custom properties).
 - `search/{type}` where `{type}` is one of: `issues`, `repositories`, `code`, `commits`, `users`, `labels`, `topics`.
