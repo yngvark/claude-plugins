@@ -147,6 +147,27 @@ header on one bad value" — never the call that produces it. Gloss or drop jarg
 reader does not work in: "Tapir" means nothing in a front-end repo, and "the backend" costs three
 words.
 
+### The X rule
+
+You write "the X" when only you know what X is. You have just read the code, the issue and the
+earlier draft, so you know which X you mean. The reader saw none of it.
+
+Instead of:
+
+> The bot then commits the change to its branch.
+
+Write:
+
+> After each template release, the `template-sync` bot regenerates `settings.yml` and commits it to
+> a `template-sync/settings` branch in each service repository.
+
+Which bot, which change, whose branch, and after what? Never write "the X" unless nearby text makes
+clear what X is. Name it concretely the first time it appears in each reply, file or section:
+"the version matcher in `foo.py`", not "the matcher". Pointer words such as "this", "these" and
+"then" follow the same rule. They must never point into another section or heading, because readers
+may read one section alone. After deleting text, reread what is left for references to the part you
+deleted.
+
 ### Explaining the reader's own system
 
 You describe back to the reader the thing they maintain: a PR that opens by explaining what the
@@ -279,6 +300,8 @@ Present state, the decision to be made, and who decides it. Nothing about how it
 
 - Does every sentence survive the deletion test?
 - Would this make sense to someone who never saw the diff, the ticket, or this conversation?
+- Does every "the X", "this", "these" and "then" point at something the reader can identify from
+  the same section?
 - Does anything restate what the code, the diff, or the title already says?
 - Would the reader have used these words before the work was done, or only after?
 - Is there a heading with less than a paragraph under it?
